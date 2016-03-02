@@ -1,0 +1,9 @@
+.venv
+.env
+.idea
+historico.mm
+*.sqlite3
+*pyc
+__pycache__
+.directory
+.python-version
