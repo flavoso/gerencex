@@ -1,0 +1,1 @@
+web: gunicorn gerencex.wsgi --log-file -

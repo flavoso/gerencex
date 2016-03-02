@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="container">
+<div class="row">
+    <figure class="col-sm-4">
+        <img src="{% static 'img/banco-de-horas.jpg' %}" class="img-rounded">
+        <h2>Banco de horas</h2>
+    </figure>
+    <figure class="col-sm-4">
+        <img src="{% static 'img/afastamento.jpg' %}" class="img-rounded">
+        <h2>Afastamentos</h2>
+    </figure>
+    <figure class="col-sm-4">
+        <img src="{% static 'img/produtividade.jpg' %}" class="img-rounded">
+        <h2>Produtividade</h2>
+    </figure>
+</div>
+</section>
+
+{% endblock %}

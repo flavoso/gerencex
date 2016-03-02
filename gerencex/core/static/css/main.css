@@ -1,0 +1,22 @@
+header {
+    padding: 20px 0;
+}
+
+section .row img {
+    /*margin: 0 0 30px;*/
+    width: 100%;
+}
+
+figure {
+    text-align: center;
+}
+
+.col-md-4 {
+  margin: 0 0 30px;
+}
+
+/*#banco {*/
+    /*background-image: url("../img/banco-de-horas.jpg");*/
+    /*background-size: cover;*/
+    /*height: 100%;*/
+/*}*/
