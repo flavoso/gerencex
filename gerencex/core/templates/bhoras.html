@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container">
+<div class="row">
+    <h1>Banco de horas da Divisão</h1>
+</div>
+<div class="row">
+    <table class="table col-sm-4">
+        <thead>
+            <tr>
+                <th>Auditor</th><th>Saldo atual</th>
+            </tr>
+        </thead>
+        <tbody class=".table-striped">
+            <tr>
+                <td>Villarinho</td><td class="debit">3 hora</td>
+            </tr>
+            <tr>
+                <td>Lúcia</td><td class="debit">1 horas</td>
+            </tr>
+            <tr>
+                <td>Barry</td><td class="credit">1 hora</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

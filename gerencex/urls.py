@@ -15,8 +15,11 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from gerencex.core.views import home, bhauditor, bhoras
 
 urlpatterns = [
-    url(r'^$', 'gerencex.core.views.home'),
+    url(r'^$', home),
+    url(r'^bancodehoras/$', bhoras),
+    url(r'^bancodehoras/fulano/', bhauditor),
     url(r'^admin/', admin.site.urls),
 ]

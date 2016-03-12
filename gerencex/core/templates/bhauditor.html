@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container">
+<div class="row">
+    <h1>Banco de horas de Fulano</h1>
+</div>
+<div class="row">
+    <h2>Saldo de horas do mês anterior: <span class="credit">crédito de 2 horas</span></h2>
+</div>
+<div class="row">
+    <h2>Movimento no mês</h2>
+</div>
+<div class="row">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Descrição (opcional)</th>
+                <th>Débito</th>
+                <th>Crédito</th>
+                <th>Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="4">Saldo inicial</td>
+                <td class="credit">+2 horas</td>
+            </tr>
+            <tr>
+                <td>04/03/2016</td>
+                <td>Peguei filho na escola</td>
+                <td class="debit">-1 hora</td>
+                <td>-</td>
+                <td class="credit">+1 hora</td>
+            </tr>
+            <tr>
+                <td>05/03/2016</td>
+                <td>Consulta médica</td>
+                <td class="debit">-3 horas</td>
+                <td>-</td>
+                <td class="debit">-2 horas</td>
+            </tr>
+            <tr>
+                <td>06/03/2016</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="credit">+1 hora</td>
+                <td class="debit">-1 hora</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</div class="row">
+    <h2>Saldo atual: <span class="debit">débito de 1 hora</span></h2>
+</div>
+
+
+{% endblock %}

@@ -15,6 +15,25 @@ figure {
   margin: 0 0 30px;
 }
 
+footer {
+    margin-top: 50px;
+}
+
+.credit {
+    color: blue;
+}
+
+.debit {
+    color: red;
+}
+
+.navbar-right {
+    padding-right: 20px;
+}
+
+.login {
+    margin-top: 200px;
+}
 /*#banco {*/
     /*background-image: url("../img/banco-de-horas.jpg");*/
     /*background-size: cover;*/
