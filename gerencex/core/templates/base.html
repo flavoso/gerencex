@@ -15,7 +15,7 @@
 </head>
 <body>
     <header class="container">
-    <nav class="navbar navbar-default">
+    <nav class="navbar navbar-default" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
                 <a class="navbar-brand" href="/">Gerencex</a>
@@ -25,7 +25,31 @@
                 <li><a href="#">Afastamentos</a></li>
                 <li><a href="#">Produtividade</a></li>
             </ul>
-            <p class="navbar-text navbar-right">Olá, <strong>Fulano de Tal</strong>!</p>
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <div>
+                    <form action="{% url 'regtime' %}" class="navbar-form" method="post">
+                        {% csrf_token %}
+                        <div class = "form-group">
+                        {% if user.userdetail.atwork %}
+                            <button type="submit" class="btn btn-danger">Registro de ponto: Fui!</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-success">Registro de ponto: Cheguei!</button>
+                        {% endif %}
+                        </div>
+                    </form>
+                    </div>
+                </li>
+                <li><a href="{% url 'logout' %}">Logout</a></li>
+            </ul>
+{#            <p class="navbar-text navbar-right">#}
+{#                {% if user.is_authenticated %}#}
+{#                    Olá, <strong> {{ user.first_name }}</strong>!#}
+{#                    <a href="{% url 'logout' %}">#}
+{#                        <span class="glyphicon glyphicon-log-out" aria-hidden="true"></span>#}
+{#                    </a>#}
+{#                {% endif %}#}
+{#            </p>#}
         </div>
     </nav>
     </header>

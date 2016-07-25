@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="container">
+<div class="row">
+    {% if post %}
+        <p>Informa hora do registro</p>
+    {% else %}
+        <p>Informa que é preciso clicar no botão para fazer o registro</p>
+    {% endif %}
+</div>
+</section>
+
+{% endblock %}

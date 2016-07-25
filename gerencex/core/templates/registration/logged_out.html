@@ -1,0 +1,36 @@
+{% load static %}
+{% load bootstrap %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerencex: Login</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+</head>
+<body>
+<h1>Sessão encerrada. Obrigado por usar o Gerencex.</h1>
+<p>Efetuar <a href="{% url 'login' %}">novo login</p>
+</body>
+</html>
+
+{#                <table>#}
+{#            <tr>#}
+{#                <td>{{ form.username.label_tag }}</td>#}
+{#                <td>{{ form.username }}</td>#}
+{#            </tr>#}
+{#            <tr>#}
+{#                <td>{{ form.password.label_tag }}</td>#}
+{#                <td>{{ form.password }}</td>#}
+{#            </tr>#}
+{#            </table>#}
+{##}
+{#            <input type="submit" value="login" />#}
+{#            <input type="hidden" name="next" value="{{ next }}" />#}
+{#            </form>#}
+{##}
+            {# Assumes you setup the password_reset view in your URLconf #}
+{#            <p><a href="{% url 'password_reset' %}">Esqueceu a senha?</a></p>#}
