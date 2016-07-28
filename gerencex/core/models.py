@@ -4,7 +4,10 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class UserDetail(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User,
+                                on_delete=models.CASCADE,
+                                primary_key=True
+                                )
     atwork = models.BooleanField(default=False)
 
     def __str__(self):
