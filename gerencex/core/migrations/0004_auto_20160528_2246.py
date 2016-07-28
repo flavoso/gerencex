@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='location',
             name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+            field=models.AutoField(auto_created=True, default=False, primary_key=True, serialize=False, verbose_name='ID'),
             preserve_default=False,
         ),
         migrations.AlterField(
