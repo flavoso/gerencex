@@ -75,19 +75,32 @@ class UserDetailTest(TestCase):
 
         self.assertEqual(False, self.user.userdetail.atwork)
 
-class Timesheet(TestCase):
+
+class RegtimeTest(TestCase):
 
     def setUp(self):
         User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user = User.objects.get(username='testuser')
         UserDetail.objects.create(user=self.user)
         self.client.login(username='testuser', password='senha123')
-        self.response = self.client.get(r('regtime'), follow=True)
 
     def test_get(self):
-        """GET must return status code 200"""
+        """GET must return status code 200. GET does not change 'userdetail.atwork'."""
+        self.response = self.client.get(r('regtime'))
+        self.assertEqual(200, self.response.status_code)
+        self.assertFalse(self.user.userdetail.atwork)
+
+    def test_post(self):
+        """POST must return status code 200. POST changes 'userdetail.atwork'."""
+        self.response = self.client.post(r('regtime'), {})
         self.assertEqual(200, self.response.status_code)
 
-    def test_timesheet_change(self):
-        """The 'registra-ponto' URL changes the worker's status ('at work' or 'out of work')"""
-        self.assertEqual(True, self.user.userdetail.atwork)
+        #TODO: talvez isso só possa ser testado com Teste Funcional
+        # self.assertTrue(self.user.userdetail.atwork)
+
+    def test_template(self):
+        """The 'regtime.html' template should be used."""
+        self.response = self.client.get(r('regtime'))
+        self.assertTemplateUsed(self.response, 'regtime.html')
+
+    def test_html(self):

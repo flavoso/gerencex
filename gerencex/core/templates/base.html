@@ -32,9 +32,9 @@
                         {% csrf_token %}
                         <div class = "form-group">
                         {% if user.userdetail.atwork %}
-                            <button type="submit" class="btn btn-danger">Registro de ponto: Fui!</button>
+                            <button type="submit" class="btn btn-danger">Registro de ponto: Saída</button>
                         {% else %}
-                            <button type="submit" class="btn btn-success">Registro de ponto: Cheguei!</button>
+                            <button type="submit" class="btn btn-success">Registro de ponto: Entrada</button>
                         {% endif %}
                         </div>
                     </form>
