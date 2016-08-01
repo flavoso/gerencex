@@ -28,13 +28,13 @@
             <ul class="nav navbar-nav navbar-right">
                 <li>
                     <div>
-                    <form action="{% url 'regtime' %}" class="navbar-form" method="post">
+                    <form action="{% url 'timing' %}" class="navbar-form" method="post">
                         {% csrf_token %}
                         <div class = "form-group">
                         {% if user.userdetail.atwork %}
-                            <button type="submit" class="btn btn-danger">Registro de ponto: Saída</button>
+                            <button type="submit" class="btn btn-danger">Registrar ponto: Saída</button>
                         {% else %}
-                            <button type="submit" class="btn btn-success">Registro de ponto: Entrada</button>
+                            <button type="submit" class="btn btn-success">Registrar ponto: Entrada</button>
                         {% endif %}
                         </div>
                     </form>

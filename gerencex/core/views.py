@@ -9,17 +9,19 @@ def home(request):
     return render(request, 'index.html')
 
 @login_required
-def regtime(request):
+def timing(request):
     context = {}
     context['post'] = False
     if request.POST:
         if request.user.userdetail.atwork:
             request.user.userdetail.atwork = False
+            context['register'] = 'saída'
         else:
             request.user.userdetail.atwork = True
+            context['register'] = 'entrada'
         request.user.userdetail.save()
         context['post'] = True
-    return render(request, 'regtime.html', context)
+    return render(request, 'timing.html', context)
 
 def bhauditor(request):
     return render(request, 'bhauditor.html')

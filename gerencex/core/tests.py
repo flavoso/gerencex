@@ -1,7 +1,7 @@
-from django.test import TestCase
-from django.shortcuts import resolve_url as r
 from django.contrib.auth.models import User
-from gerencex.core.models import UserDetail
+from django.shortcuts import resolve_url as r
+from django.test import TestCase
+from gerencex.core.models import UserDetail, Timing
 
 
 class LogIn(TestCase):
@@ -76,31 +76,53 @@ class UserDetailTest(TestCase):
         self.assertEqual(False, self.user.userdetail.atwork)
 
 
-class RegtimeTest(TestCase):
+class TimingViewTest(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        cls.userdetail = UserDetail.objects.create(user=cls.user)
 
     def setUp(self):
-        User.objects.create_user('testuser', 'test@user.com', 'senha123')
-        self.user = User.objects.get(username='testuser')
-        UserDetail.objects.create(user=self.user)
+        self.userdetail.refresh_from_db()
         self.client.login(username='testuser', password='senha123')
 
     def test_get(self):
         """GET must return status code 200. GET does not change 'userdetail.atwork'."""
-        self.response = self.client.get(r('regtime'))
+        self.response = self.client.get(r('timing'))
         self.assertEqual(200, self.response.status_code)
-        self.assertFalse(self.user.userdetail.atwork)
+        self.assertFalse(self.userdetail.atwork)
 
     def test_post(self):
         """POST must return status code 200. POST changes 'userdetail.atwork'."""
-        self.response = self.client.post(r('regtime'), {})
+        self.response = self.client.post(r('timing'), {})
         self.assertEqual(200, self.response.status_code)
-
-        #TODO: talvez isso só possa ser testado com Teste Funcional
-        # self.assertTrue(self.user.userdetail.atwork)
+        # TODO: talvez isso só possa ser testado com Teste Funcional
+        # self.assertTrue(self.userdetail.atwork)
 
     def test_template(self):
-        """The 'regtime.html' template should be used."""
-        self.response = self.client.get(r('regtime'))
-        self.assertTemplateUsed(self.response, 'regtime.html')
+        """The 'timing.html' template should be used."""
+        self.response = self.client.get(r('timing'))
+        self.assertTemplateUsed(self.response, 'timing.html')
 
-    def test_html(self):
+    # def test_html(self):
+    #     self.response = self.client.post(r('timing'))
+    #     self.response
+
+
+class TimingModelTest(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        cls.userdetail = UserDetail.objects.create(user=cls.user)
+
+    def setUp(self):
+        self.client.login(username='testuser', password='senha123')
+
+    def test_timing(self):
+        timing = Timing.objects.create(
+            user=self.user,
+            date_time='2016-08-01 12:52:40.178964',
+            checkin=False)
+        self.assertTrue(Timing.objects.exists())
