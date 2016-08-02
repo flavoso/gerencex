@@ -1,11 +1,17 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load tz %}
+{#{% get_current_timezone as TIME_ZONE %}#}
 
 {% block content %}
 <section class="container">
 <div class="row">
     {% if post %}
-        <h2>Foi registrada a sua {{ register }}.</h2>
+        <h2>Registro de ponto efetuado.</h2>
+        <ul>
+            <li>Usuário: {{ user.username }}</li>
+            <li>{{ register|capfirst }} em {{ time|localtime }}</li>
+        </ul>
     {% else %}
         <h2>Para registrar o ponto, clique no botão localizado no canto superior direito da tela.</h2>
     {% endif %}

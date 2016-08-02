@@ -120,9 +120,10 @@ class TimingModelTest(TestCase):
     def setUp(self):
         self.client.login(username='testuser', password='senha123')
 
-    def test_timing(self):
+    def test_create(self):
         timing = Timing.objects.create(
             user=self.user,
-            date_time='2016-08-01 12:52:40.178964',
+            date_time='2016-08-02 11:45:01.017787+00:00',
             checkin=False)
         self.assertTrue(Timing.objects.exists())
+
