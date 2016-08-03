@@ -4,18 +4,46 @@
 {#{% get_current_timezone as TIME_ZONE %}#}
 
 {% block content %}
-<section class="container">
-<div class="row">
+<section class="container-fluid">
     {% if post %}
-        <h2>Registro de ponto efetuado.</h2>
-        <ul>
-            <li>Usuário: {{ user.username }}</li>
-            <li>{{ register|capfirst }} em {{ time|localtime }}</li>
-        </ul>
+        <div class="row">
+            <div class="col-sm-6 col-sm-offset-3 text-sm-center">
+                {% if register == "entrada" %}
+                    <h3>Bem vindo, {{ user.first_name }} {{ user.last_name }}!</h3>
+                {% else %}
+                    <h3>Adeus, {{ user.first_name }} {{ user.last_name }}!</h3>
+                {% endif %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-4 col-sm-offset-4">
+                <h3 class="text-success">{{ register|capfirst }} registrada</h3>
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <td>Usuário:</td>
+                            <td class="text-primary">{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td>Data:</td>
+                            <td>{{ time|localtime|date:"SHORT_DATE_FORMAT" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Horário:</td>
+                            <td>{{ time|localtime|date:"H:i:s" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     {% else %}
-        <h2>Para registrar o ponto, clique no botão localizado no canto superior direito da tela.</h2>
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="text-warning">Para registrar o ponto, clique no botão localizado
+                    no canto superior direito da tela.</h3>
+            </div>
+        </div>
     {% endif %}
-</div>
 </section>
 
 {% endblock %}
