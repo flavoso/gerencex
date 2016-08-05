@@ -1,7 +1,10 @@
+import datetime
+
 from django.contrib.auth.models import User
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
-from gerencex.core.models import UserDetail, Timing
+from gerencex.core.models import UserDetail, Timing, Restday
+from gerencex.core.forms import RestdayForm
 
 
 class LogIn(TestCase):
@@ -127,3 +130,50 @@ class TimingModelTest(TestCase):
             checkin=False)
         self.assertTrue(Timing.objects.exists())
 
+
+class RestdayModelTest(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.date = Restday.objects.create(
+            date=datetime.date(2016, 8, 4),
+            note='Jogos olímpicos'
+        )
+
+    def test_create(self):
+        self.assertTrue(Restday.objects.exists())
+
+
+class RestdayFormTest(TestCase):
+
+    def test_form_has_fields(self):
+        """Form must have 2 fields"""
+        form = RestdayForm()
+        expected = ('date', 'note')
+        self.assertSequenceEqual(expected, list(form.fields))
+
+    def test_weekend_raises_error(self):
+        """Weekends raise error in the form"""
+        weekend = datetime.date(2016, 8, 6)
+        form = self.make_validated_form(date=weekend)
+        self.assertFormErrorCode(form, 'date', 'weekend')
+
+    def assertFormErrorCode(self, form, field, code):
+        errors = form.errors.as_data()
+        errors_list = errors[field]
+        exception = errors_list[0]
+        self.assertEqual(code, exception.code)
+
+    def make_validated_form(self, **kwargs):
+        valid = dict(date=datetime.date(2016, 8, 4),
+                     note='Jogos olímpicos')
+        data = dict(valid, **kwargs)
+        form = RestdayForm(data)
+        form.is_valid()
+
+        return form
+
+    # def assertFormErrorMessage(self, form, field, msg):
+    #     errors = form.errors
+    #     error_list = errors[field]
+    #     self.assertListEqual([msg], error_list)

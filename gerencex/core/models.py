@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+from gerencex.core.validators import validate_date
 
 
 # Create your models here.
@@ -21,9 +22,28 @@ class Timing(models.Model):
     date_time = models.DateTimeField(default=timezone.now)
     checkin = models.BooleanField(default=True)
 
+    class Meta:
+        verbose_name_plural = 'registros'
+        verbose_name = 'registro'
+        ordering = ('date_time', )
+
     def __str__(self):
         if self.checkin:
             reg = '{}: {} (Entrada)'.format(self.user, self.date_time)
         else:
             reg = '{}: {} (Saída)'.format(self.user, self.date_time)
         return reg
+
+
+class Restday(models.Model):
+
+    date = models.DateField(validators=[validate_date])
+    note = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name_plural = 'dias não úteis'
+        verbose_name = 'dia não útil'
+        ordering = ('date',)
+
+    def __str__(self):
+        return '{}: {}'.format(self.date, self.note)
