@@ -37,8 +37,8 @@ class Timing(models.Model):
 
 class Restday(models.Model):
 
-    date = models.DateField(validators=[validate_date])
-    note = models.CharField(max_length=50)
+    date = models.DateField('data', validators=[validate_date])
+    note = models.CharField('descrição', max_length=50)
 
     class Meta:
         verbose_name_plural = 'dias não úteis'

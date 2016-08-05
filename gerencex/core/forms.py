@@ -1,6 +1,8 @@
 from django import forms
-from gerencex.core.validators import validate_date
+from gerencex.core.models import Restday
 
-class RestdayForm(forms.Form):
-    date = forms.DateField(label="Data", validators=[validate_date])
-    note = forms.CharField(label="Descrição", max_length=50)
+
+class RestdayForm(forms.ModelForm):
+    class Meta:
+        model = Restday
+        fields = ['date', 'note']

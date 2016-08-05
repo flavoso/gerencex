@@ -31,6 +31,9 @@ def timing(request):
         context['post'] = True
     return render(request, 'timing.html', context)
 
+def restday(request):
+    return render(request, 'restday.html')
+
 def bhauditor(request):
     return render(request, 'bhauditor.html')
 

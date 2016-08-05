@@ -165,7 +165,7 @@ class RestdayFormTest(TestCase):
         self.assertEqual(code, exception.code)
 
     def make_validated_form(self, **kwargs):
-        valid = dict(date=datetime.date(2016, 8, 4),
+        valid = dict(date=datetime.date(2016, 8, 5),
                      note='Jogos olímpicos')
         data = dict(valid, **kwargs)
         form = RestdayForm(data)
