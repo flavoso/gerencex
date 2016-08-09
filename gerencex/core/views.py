@@ -1,9 +1,10 @@
 from datetime import timedelta
-import pytz
 
-from django.utils import timezone
+import pytz
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, get_object_or_404, resolve_url as r
+from django.utils import timezone
 from gerencex.core.models import Timing
 
 
@@ -12,26 +13,54 @@ def home(request):
     return render(request, 'index.html')
 
 @login_required
-def timing(request):
+def timing_new(request):
     activate_timezone()
-    context = {}
-    context['post'] = False
+
     if request.POST:
         if request.user.userdetail.atwork:
-            time = Timing.objects.create(user=request.user, checkin=False)
-            context['time'] = time.date_time + timedelta(minutes = 5)
             request.user.userdetail.atwork = False
-            context['register'] = 'saída'
+            ticket = Timing(user=request.user, checkin=False)
+            """
+            Checkout time is recorded only if there is a checkin in the same day.
+            """
+            date = ticket.date_time.date()
+            valid_checkout = bool(Timing.objects.filter(date_time__date=date, checkin=True))
+
+            if valid_checkout:
+                ticket.save()
+            else:
+                return render(request, r('timing_fail'))
+
         else:
-            time = Timing.objects.create(user=request.user, checkin=True)
-            context['time'] = time.date_time + timedelta(minutes = -10)
             request.user.userdetail.atwork = True
-            context['register'] = 'entrada'
+            ticket = Timing.objects.create(user=request.user, checkin=True)
+
         request.user.userdetail.save()
-        context['post'] = True
+        return HttpResponseRedirect(r('timing', ticket.pk))
+    return render(request, 'timing_new_not_post.html')
+
+@login_required
+def timing(request, pk):
+    activate_timezone()
+    context = {}
+    ticket = get_object_or_404(Timing, pk=pk)
+
+    if ticket.checkin:
+        context['register'] = 'entrada'
+        context['time'] = ticket.date_time + timedelta(minutes=-10)
+    else:
+        context['register'] = 'saída'
+        context['time'] = ticket.date_time + timedelta(minutes = 5)
     return render(request, 'timing.html', context)
 
-def restday(request):
+@login_required
+def timing_fail(request):
+    return render(request, 'timing_fail.html')
+
+def newrestday(request):
+    return render(request, 'newrestday.html')
+
+def restday(request, date):
     return render(request, 'restday.html')
 
 def bhauditor(request):

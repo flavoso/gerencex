@@ -3,8 +3,8 @@ import datetime
 from django.contrib.auth.models import User
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
-from gerencex.core.models import UserDetail, Timing, Restday
 from gerencex.core.forms import RestdayForm
+from gerencex.core.models import UserDetail, Timing, Restday
 
 
 class LogIn(TestCase):
@@ -79,38 +79,44 @@ class UserDetailTest(TestCase):
         self.assertEqual(False, self.user.userdetail.atwork)
 
 
-class TimingViewTest(TestCase):
+# class TimingViewTest(TestCase):
+#
+#     def setUp(self):
+#         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+#         self.userdetail = UserDetail.objects.create(user=self.user)
+#         self.client.login(username='testuser', password='senha123')
+#         self.response = self.client.post(r('timing_new'), {})
+#
+#     def test_timing_new_post_redirect(self):
+#         """POST redirects to 'timing'."""
+#         self.assertRedirects(self.response, r('timing', 1))
+#
+#     def test_timing_new_post_changes_atwork(self):
+#         """POST changes 'userdetail.atwork'."""
+#         self.userdetail.refresh_from_db()
+#         self.assertTrue(self.userdetail.atwork)
 
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
-        cls.userdetail = UserDetail.objects.create(user=cls.user)
 
-    def setUp(self):
-        self.userdetail.refresh_from_db()
-        self.client.login(username='testuser', password='senha123')
+    # def test_timing_get(self):
+    #
+    #     self.response = self.client.get(r('timing'))
+    #     self.assertEqual(200, self.response.status_code)
+    # #     # TODO: talvez isso só possa ser testado com Teste Funcional
+    # #     qs = UserDetail.objects.get(user=self.user)
+    # #     self.assertTrue(qs.atwork)
+    #
+    # def test_timing_template(self):
+    #     """The 'timing.html' template should be used."""
+    #     self.response = self.client.get(r('timing'))
+    #     self.assertTemplateUsed(self.response, 'timing.html')
 
-    def test_get(self):
-        """GET must return status code 200. GET does not change 'userdetail.atwork'."""
-        self.response = self.client.get(r('timing'))
-        self.assertEqual(200, self.response.status_code)
-        self.assertFalse(self.userdetail.atwork)
-
-    def test_post(self):
-        """POST must return status code 200. POST changes 'userdetail.atwork'."""
-        self.response = self.client.post(r('timing'), {})
-        self.assertEqual(200, self.response.status_code)
-        # TODO: talvez isso só possa ser testado com Teste Funcional
-        # self.assertTrue(self.userdetail.atwork)
-
-    def test_template(self):
-        """The 'timing.html' template should be used."""
-        self.response = self.client.get(r('timing'))
-        self.assertTemplateUsed(self.response, 'timing.html')
-
-    # def test_html(self):
-    #     self.response = self.client.post(r('timing'))
-    #     self.response
+    # def test_checkout_error(self):
+    #     """Check outs are not valid if there was not a previous check in in the same day"""
+    #     Timing.objects.create(user=self.user,
+    #                           date_time=datetime.datetime(year=2016, month=8, day=5, hour=13),
+    #                           checkin=True)
+    #     self.response = self.client.post(r('timing'), {})
+    #     self.assertEqual(self.response.context['register'], 'falha')
 
 
 class TimingModelTest(TestCase):
@@ -177,3 +183,14 @@ class RestdayFormTest(TestCase):
     #     errors = form.errors
     #     error_list = errors[field]
     #     self.assertListEqual([msg], error_list)
+
+class NewRestdayViewTest(TestCase):
+
+    def setUp(self):
+        self.response = self.client.get(r('newrestday'))
+
+    def test_get(self):
+        self.assertEqual(200, self.response.status_code)
+
+    def test_template(self):
+        self.assertTemplateUsed(self.response, 'newrestday.html')

@@ -28,7 +28,7 @@
             <ul class="nav navbar-nav navbar-right">
                 <li>
                     <div>
-                    <form action="{% url 'timing' %}" class="navbar-form" method="post">
+                    <form action="{% url 'timing_new' %}" class="navbar-form" method="post">
                         {% csrf_token %}
                         <div class = "form-group">
                         {% if user.userdetail.atwork %}

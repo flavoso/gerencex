@@ -5,16 +5,20 @@
 
 {% block content %}
 <section class="container-fluid">
-    {% if post %}
-        <div class="row">
-            <div class="col-sm-6 col-sm-offset-3 text-sm-center">
-                {% if register == "entrada" %}
-                    <h3>Bem vindo, {{ user.first_name }} {{ user.last_name }}!</h3>
-                {% else %}
-                    <h3>Adeus, {{ user.first_name }} {{ user.last_name }}!</h3>
-                {% endif %}
-            </div>
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-3 text-sm-center">
+            {% if register == "entrada" %}
+                <h3>Bem vindo, {{ user.first_name }} {{ user.last_name }}!</h3>
+            {% elif register == "saída" %}
+                <h3>Adeus, {{ user.first_name }} {{ user.last_name }}!</h3>
+            {% else %}
+                <h3 class="bg-warning">Saída não registrada!</h3>
+                <p>Você não registrou a saída no dia anterior. Entre em contato com seu chefe imediato,
+                    para que o registro seja feito manualmente.</p>
+            {% endif %}
         </div>
+    </div>
+    {% if register != "falha" %}
         <div class="row">
             <div class="col-sm-4 col-sm-offset-4">
                 <h3 class="text-success">{{ register|capfirst }} registrada</h3>
@@ -34,13 +38,6 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-    {% else %}
-        <div class="row">
-            <div class="col-md-12">
-                <h3 class="text-warning">Para registrar o ponto, clique no botão localizado
-                    no canto superior direito da tela.</h3>
             </div>
         </div>
     {% endif %}

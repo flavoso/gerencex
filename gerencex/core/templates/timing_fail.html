@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block content %}
+
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-3 text-sm-center">
+            <h3 class="bg-warning">Saída não registrada!</h3>
+                <p>Você não registrou a saída no dia anterior. Entre em contato com seu chefe imediato,
+                    para que o registro seja feito manualmente.</p>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
