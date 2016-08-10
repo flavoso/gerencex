@@ -16,9 +16,10 @@ def home(request):
 def timing_new(request):
     activate_timezone()
 
-    if request.POST:
-        if request.user.userdetail.atwork:
+    if request.method == 'POST':
+        if request.user.userdetail.atwork == True:
             request.user.userdetail.atwork = False
+            request.user.userdetail.save()
             ticket = Timing(user=request.user, checkin=False)
             """
             Checkout time is recorded only if there is a checkin in the same day.
@@ -29,13 +30,13 @@ def timing_new(request):
             if valid_checkout:
                 ticket.save()
             else:
-                return render(request, r('timing_fail'))
+                return HttpResponseRedirect(r('timing_fail'))
 
         else:
             request.user.userdetail.atwork = True
+            request.user.userdetail.save()
             ticket = Timing.objects.create(user=request.user, checkin=True)
 
-        request.user.userdetail.save()
         return HttpResponseRedirect(r('timing', ticket.pk))
     return render(request, 'timing_new_not_post.html')
 

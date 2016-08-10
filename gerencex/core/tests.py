@@ -1,8 +1,11 @@
 import datetime
 
+import pytz
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
+from django.utils import timezone
 from gerencex.core.forms import RestdayForm
 from gerencex.core.models import UserDetail, Timing, Restday
 
@@ -79,44 +82,65 @@ class UserDetailTest(TestCase):
         self.assertEqual(False, self.user.userdetail.atwork)
 
 
-# class TimingViewTest(TestCase):
-#
-#     def setUp(self):
-#         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
-#         self.userdetail = UserDetail.objects.create(user=self.user)
-#         self.client.login(username='testuser', password='senha123')
-#         self.response = self.client.post(r('timing_new'), {})
-#
-#     def test_timing_new_post_redirect(self):
-#         """POST redirects to 'timing'."""
-#         self.assertRedirects(self.response, r('timing', 1))
-#
-#     def test_timing_new_post_changes_atwork(self):
-#         """POST changes 'userdetail.atwork'."""
-#         self.userdetail.refresh_from_db()
-#         self.assertTrue(self.userdetail.atwork)
+class TimingViewTest(TestCase):
 
+    def setUp(self):
+        self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        self.userdetail = UserDetail.objects.create(user=self.user)
+        self.client.login(username='testuser', password='senha123')
 
-    # def test_timing_get(self):
-    #
-    #     self.response = self.client.get(r('timing'))
-    #     self.assertEqual(200, self.response.status_code)
-    # #     # TODO: talvez isso só possa ser testado com Teste Funcional
-    # #     qs = UserDetail.objects.get(user=self.user)
-    # #     self.assertTrue(qs.atwork)
-    #
-    # def test_timing_template(self):
-    #     """The 'timing.html' template should be used."""
-    #     self.response = self.client.get(r('timing'))
-    #     self.assertTemplateUsed(self.response, 'timing.html')
+    def test_get(self):
+        self.response = self.client.get(r('timing_new'))
+        self.assertEqual(200, self.response.status_code)
+        self.assertTemplateUsed(self.response, 'timing_new_not_post.html')
 
-    # def test_checkout_error(self):
-    #     """Check outs are not valid if there was not a previous check in in the same day"""
-    #     Timing.objects.create(user=self.user,
-    #                           date_time=datetime.datetime(year=2016, month=8, day=5, hour=13),
-    #                           checkin=True)
-    #     self.response = self.client.post(r('timing'), {})
-    #     self.assertEqual(self.response.context['register'], 'falha')
+    def test_valid_checkin(self):
+        """Valid checkin: (a) redirects to 'timing'; b) changes userdetail.atwork to True; (c)
+        generates a checkin ticket"""
+        self.userdetail.atwork = False
+        self.userdetail.save()
+        self.response = self.client.post(reverse('timing_new'))
+        self.assertRedirects(self.response, reverse('timing', args=[1]))
+
+        atwork = UserDetail.objects.get(user=self.user).atwork
+        self.assertTrue(atwork)
+
+        checkin_tickets = Timing.objects.filter(user=self.user, checkin=True).all()
+        self.assertEqual(len(checkin_tickets), 1)
+
+    def test_valid_checkout(self):
+        """Valid checkout: (a) occurs only when there is a checkin at the same day; b) redirects
+        to 'timing'; (c) changes userdetail.atwork to False; (d) generates a checkout ticket"""
+        activate_timezone()
+        d = datetime.datetime.now() + datetime.timedelta(hours=-1)
+        date_time = timezone.make_aware(d)
+        Timing.objects.create(user=self.user, date_time=date_time, checkin=True)
+        self.userdetail.atwork = True
+        self.userdetail.save()
+        self.response = self.client.post(reverse('timing_new'))
+        self.assertRedirects(self.response, reverse('timing', args=[2]))
+
+        atwork = UserDetail.objects.get(user=self.user).atwork
+        self.assertFalse(atwork)
+
+        checkout_tickets = Timing.objects.filter(user=self.user, checkin=False)
+        self.assertEqual(len(checkout_tickets), 1)
+
+    def test_invalid_checkout(self):
+        """Invalid checkout: (a) occurs when the last checkin happened the day before; b) redirects
+        to 'timing', with an alert message; (c) changes userdetail.atwork to False; (d) doesn't
+        generate a checkout ticket"""
+        activate_timezone()
+        d = datetime.datetime.now() + datetime.timedelta(days=-1)
+        date_time = timezone.make_aware(d)
+        Timing.objects.create(user=self.user, date_time=date_time, checkin=True)
+        self.userdetail.atwork = True
+        self.userdetail.save()
+        self.response = self.client.post(reverse('timing_new'))
+        self.assertRedirects(self.response, r('timing_fail'))
+
+        atwork = UserDetail.objects.get(user=self.user).atwork
+        self.assertFalse(atwork)
 
 
 class TimingModelTest(TestCase):
@@ -179,10 +203,6 @@ class RestdayFormTest(TestCase):
 
         return form
 
-    # def assertFormErrorMessage(self, form, field, msg):
-    #     errors = form.errors
-    #     error_list = errors[field]
-    #     self.assertListEqual([msg], error_list)
 
 class NewRestdayViewTest(TestCase):
 
@@ -194,3 +214,6 @@ class NewRestdayViewTest(TestCase):
 
     def test_template(self):
         self.assertTemplateUsed(self.response, 'newrestday.html')
+
+def activate_timezone():
+    timezone.activate(pytz.timezone('America/Sao_Paulo'))
