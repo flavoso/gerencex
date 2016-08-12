@@ -15,8 +15,8 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from gerencex.core.views import home, bhauditor, bhoras, timing, newrestday, restday, timing_new, \
-    timing_fail
+from gerencex.core.views import home, bhauditor, bhoras, timing, restday_new, timing_new, \
+    timing_fail, restday
 from django.contrib.auth.views import logout
 
 urlpatterns = [
@@ -28,7 +28,7 @@ urlpatterns = [
     url(r'^registro-de-ponto/novo/$', timing_new, name='timing_new'),
     url(r'^registro-de-ponto/(\d+)/$', timing, name='timing'),
     url(r'^registro-de-ponto/falha/$', timing_fail, name='timing_fail'),
-    url(r'^folgas/nova$', newrestday, name='newrestday'),
-    url(r'^folgas/(\d+-\d+-\d+)$', restday, name='restday'),
+    url(r'^folgas/nova$', restday_new, name='restday_new'),
+    url(r'^folgas/(?P<date>\d\d-\d\d-\d{4,4})/$', restday, name='restday'),
     url(r'^admin/', admin.site.urls),
 ]

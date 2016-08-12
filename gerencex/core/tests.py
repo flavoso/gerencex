@@ -2,7 +2,6 @@ import datetime
 
 import pytz
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
@@ -78,8 +77,8 @@ class UserDetailTest(TestCase):
 
     def test_at_work(self):
         """User must have an 'at work' boolean, whose default is False"""
-
-        self.assertEqual(False, self.user.userdetail.atwork)
+        atwork = UserDetail.objects.get(user=self.user).atwork
+        self.assertFalse(atwork)
 
 
 class TimingViewTest(TestCase):
@@ -99,8 +98,8 @@ class TimingViewTest(TestCase):
         generates a checkin ticket"""
         self.userdetail.atwork = False
         self.userdetail.save()
-        self.response = self.client.post(reverse('timing_new'))
-        self.assertRedirects(self.response, reverse('timing', args=[1]))
+        self.response = self.client.post(r('timing_new'))
+        self.assertRedirects(self.response, r('timing', 1))
 
         atwork = UserDetail.objects.get(user=self.user).atwork
         self.assertTrue(atwork)
@@ -117,8 +116,8 @@ class TimingViewTest(TestCase):
         Timing.objects.create(user=self.user, date_time=date_time, checkin=True)
         self.userdetail.atwork = True
         self.userdetail.save()
-        self.response = self.client.post(reverse('timing_new'))
-        self.assertRedirects(self.response, reverse('timing', args=[2]))
+        self.response = self.client.post(r('timing_new'))
+        self.assertRedirects(self.response, r('timing', 2))
 
         atwork = UserDetail.objects.get(user=self.user).atwork
         self.assertFalse(atwork)
@@ -136,7 +135,7 @@ class TimingViewTest(TestCase):
         Timing.objects.create(user=self.user, date_time=date_time, checkin=True)
         self.userdetail.atwork = True
         self.userdetail.save()
-        self.response = self.client.post(reverse('timing_new'))
+        self.response = self.client.post(r('timing_new'))
         self.assertRedirects(self.response, r('timing_fail'))
 
         atwork = UserDetail.objects.get(user=self.user).atwork
@@ -154,10 +153,9 @@ class TimingModelTest(TestCase):
         self.client.login(username='testuser', password='senha123')
 
     def test_create(self):
-        timing = Timing.objects.create(
+        Timing.objects.create(
             user=self.user,
-            date_time='2016-08-02 11:45:01.017787+00:00',
-            checkin=False)
+            date_time='2016-08-02 11:45:01.017787+00:00') # 'checkin' defaults to 'False'
         self.assertTrue(Timing.objects.exists())
 
 
@@ -207,7 +205,7 @@ class RestdayFormTest(TestCase):
 class NewRestdayViewTest(TestCase):
 
     def setUp(self):
-        self.response = self.client.get(r('newrestday'))
+        self.response = self.client.get(r('restday_new'))
 
     def test_get(self):
         self.assertEqual(200, self.response.status_code)
@@ -215,5 +213,6 @@ class NewRestdayViewTest(TestCase):
     def test_template(self):
         self.assertTemplateUsed(self.response, 'newrestday.html')
 
+
 def activate_timezone():
-    timezone.activate(pytz.timezone('America/Sao_Paulo'))
+        return timezone.activate(pytz.timezone('America/Sao_Paulo'))

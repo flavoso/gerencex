@@ -58,7 +58,7 @@ def timing(request, pk):
 def timing_fail(request):
     return render(request, 'timing_fail.html')
 
-def newrestday(request):
+def restday_new(request):
     return render(request, 'newrestday.html')
 
 def restday(request, date):
