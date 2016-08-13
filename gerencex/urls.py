@@ -16,7 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from gerencex.core.views import home, bhauditor, bhoras, timing, restday_new, timing_new, \
-    timing_fail, restday
+    timing_fail, restday, forgotten_checkouts
 from django.contrib.auth.views import logout
 
 urlpatterns = [
@@ -25,9 +25,11 @@ urlpatterns = [
     url(r'^$', home, name='home'),
     url(r'^bancodehoras/$', bhoras, name='bhoras'),
     url(r'^bancodehoras/fulano/', bhauditor, name='bhauditor'),
-    url(r'^registro-de-ponto/novo/$', timing_new, name='timing_new'),
-    url(r'^registro-de-ponto/(\d+)/$', timing, name='timing'),
-    url(r'^registro-de-ponto/falha/$', timing_fail, name='timing_fail'),
+    url(r'^registro_de_ponto/novo/$', timing_new, name='timing_new'),
+    url(r'^registro_de_ponto/(\d+)/$', timing, name='timing'),
+    url(r'^registro_de_ponto/falha/$', timing_fail, name='timing_fail'),
+    url(r'^registro_de_ponto/saidas_nao_registradas/', forgotten_checkouts,
+        name='forgotten_checkouts'),
     url(r'^folgas/nova$', restday_new, name='restday_new'),
     url(r'^folgas/(?P<date>\d\d-\d\d-\d{4,4})/$', restday, name='restday'),
     url(r'^admin/', admin.site.urls),

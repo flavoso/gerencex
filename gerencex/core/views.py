@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import pytz
 from django.contrib.auth.decorators import login_required
@@ -20,7 +20,7 @@ def timing_new(request):
         if request.user.userdetail.atwork == True:
             request.user.userdetail.atwork = False
             request.user.userdetail.save()
-            ticket = Timing(user=request.user, checkin=False)
+            ticket = Timing(user=request.user, checkin=False, created_by=request.user)
             """
             Checkout time is recorded only if there is a checkin in the same day.
             """
@@ -35,7 +35,9 @@ def timing_new(request):
         else:
             request.user.userdetail.atwork = True
             request.user.userdetail.save()
-            ticket = Timing.objects.create(user=request.user, checkin=True)
+            ticket = Timing.objects.create(user=request.user,
+                                           checkin=True,
+                                           created_by=request.user)
 
         return HttpResponseRedirect(r('timing', ticket.pk))
     return render(request, 'timing_new_not_post.html')
@@ -57,6 +59,28 @@ def timing(request, pk):
 @login_required
 def timing_fail(request):
     return render(request, 'timing_fail.html')
+
+def forgotten_checkouts(request):
+    """Get the check ins which have no check outs at the same day, via an indirect approach: two
+    consecutive check ins indicate the target."""
+
+    queryset = Timing.objects.all().order_by('user', 'date_time')
+    tickets = [entry for entry in queryset]  # Caching the queryset, to avoid new database lookups
+
+    regs = []
+
+    lim = len(tickets) - 1
+    for idx in range(0, lim):
+        t1 = tickets[idx]
+        t2 = tickets[idx + 1]
+        if t1.user == t2.user and t1.checkin == t2.checkin == True:
+            regs.append({
+                'pk': t1.pk,
+                'name': t1.user.first_name,
+                'date': t1.date_time
+            })
+
+    return render(request, 'forgotten_checkouts.html', {'regs': regs})
 
 def restday_new(request):
     return render(request, 'newrestday.html')

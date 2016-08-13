@@ -1,5 +1,5 @@
 from django import forms
-from gerencex.core.models import Restday
+from gerencex.core.models import Restday, Timing
 
 
 class RestdayForm(forms.ModelForm):

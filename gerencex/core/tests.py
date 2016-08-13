@@ -95,7 +95,7 @@ class TimingViewTest(TestCase):
 
     def test_valid_checkin(self):
         """Valid checkin: (a) redirects to 'timing'; b) changes userdetail.atwork to True; (c)
-        generates a checkin ticket"""
+        generates a checkin ticket; (d) the ticket is created by the user"""
         self.userdetail.atwork = False
         self.userdetail.save()
         self.response = self.client.post(r('timing_new'))
@@ -107,13 +107,18 @@ class TimingViewTest(TestCase):
         checkin_tickets = Timing.objects.filter(user=self.user, checkin=True).all()
         self.assertEqual(len(checkin_tickets), 1)
 
+        created_by = checkin_tickets[0].created_by
+        self.assertEqual(created_by, self.user)
+
     def test_valid_checkout(self):
         """Valid checkout: (a) occurs only when there is a checkin at the same day; b) redirects
-        to 'timing'; (c) changes userdetail.atwork to False; (d) generates a checkout ticket"""
+        to 'timing'; (c) changes userdetail.atwork to False; (d) generates a checkout ticket;
+        (e) the ticket is created by the user"""
         activate_timezone()
         d = datetime.datetime.now() + datetime.timedelta(hours=-1)
         date_time = timezone.make_aware(d)
-        Timing.objects.create(user=self.user, date_time=date_time, checkin=True)
+        Timing.objects.create(user=self.user, date_time=date_time, checkin=True,
+                              created_by=self.user)
         self.userdetail.atwork = True
         self.userdetail.save()
         self.response = self.client.post(r('timing_new'))
@@ -125,6 +130,9 @@ class TimingViewTest(TestCase):
         checkout_tickets = Timing.objects.filter(user=self.user, checkin=False)
         self.assertEqual(len(checkout_tickets), 1)
 
+        created_by = checkout_tickets[0].created_by
+        self.assertEqual(created_by, self.user)
+
     def test_invalid_checkout(self):
         """Invalid checkout: (a) occurs when the last checkin happened the day before; b) redirects
         to 'timing', with an alert message; (c) changes userdetail.atwork to False; (d) doesn't
@@ -132,7 +140,8 @@ class TimingViewTest(TestCase):
         activate_timezone()
         d = datetime.datetime.now() + datetime.timedelta(days=-1)
         date_time = timezone.make_aware(d)
-        Timing.objects.create(user=self.user, date_time=date_time, checkin=True)
+        Timing.objects.create(user=self.user, date_time=date_time, checkin=True,
+                              created_by=self.user)
         self.userdetail.atwork = True
         self.userdetail.save()
         self.response = self.client.post(r('timing_new'))
@@ -140,6 +149,48 @@ class TimingViewTest(TestCase):
 
         atwork = UserDetail.objects.get(user=self.user).atwork
         self.assertFalse(atwork)
+
+
+class ForgottenCheckoutsViewTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        self.user.first_name = 'ze mane'
+        self.user.save()
+
+    def test_get(self):
+        self.resp = self.client.get(r('forgotten_checkouts'))
+        self.assertEqual(200, self.resp.status_code)
+
+    def test_template(self):
+        self.resp = self.client.get(r('forgotten_checkouts'))
+        self.assertTemplateUsed(self.resp, 'forgotten_checkouts.html')
+
+    def test_html(self):
+        activate_timezone()
+
+        d1 = datetime.datetime.now() + datetime.timedelta(days=-3)
+        date_time_1 = timezone.make_aware(d1)
+        d2 = datetime.datetime.now() + datetime.timedelta(days=-2)
+        date_time_2 = timezone.make_aware(d2)
+        d3 = datetime.datetime.now() + datetime.timedelta(days=-1)
+        date_time_3 = timezone.make_aware(d3)
+        d4 = datetime.datetime.now()
+        date_time_4 = timezone.make_aware(d4)
+
+        Timing.objects.create(user=self.user, date_time=date_time_1, checkin=False,
+                              created_by=self.user)
+        Timing.objects.create(user=self.user, date_time=date_time_2, checkin=True,
+                              created_by=self.user)
+        Timing.objects.create(user=self.user, date_time=date_time_3, checkin=True,
+                              created_by=self.user)
+
+        pk = Timing.objects.get(date_time=date_time_2).pk
+        self.resp = self.client.get(r('forgotten_checkouts'))
+
+        expected = '<td>' + str(pk) + '</td>'
+
+        self.assertContains(self.resp, expected)
 
 
 class TimingModelTest(TestCase):
@@ -153,11 +204,13 @@ class TimingModelTest(TestCase):
         self.client.login(username='testuser', password='senha123')
 
     def test_create(self):
-        Timing.objects.create(
+        t = Timing.objects.create(
             user=self.user,
             date_time='2016-08-02 11:45:01.017787+00:00') # 'checkin' defaults to 'False'
         self.assertTrue(Timing.objects.exists())
 
+        default_values = (t.checkin, t.created_by)
+        self.assertTupleEqual((True, None), default_values)
 
 class RestdayModelTest(TestCase):
 

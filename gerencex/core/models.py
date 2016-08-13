@@ -18,14 +18,19 @@ class UserDetail(models.Model):
 
 
 class Timing(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='tickets')
     date_time = models.DateTimeField(default=timezone.now)
     checkin = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User,
+                                   on_delete=models.CASCADE,
+                                   null=True)
 
     class Meta:
-        verbose_name_plural = 'registros'
-        verbose_name = 'registro'
-        ordering = ('date_time', )
+        verbose_name_plural = 'registros de entrada e saída'
+        verbose_name = 'registro de entrada e saída'
+        ordering = ['date_time']
 
     def __str__(self):
         if self.checkin:
@@ -37,13 +42,16 @@ class Timing(models.Model):
 
 class Restday(models.Model):
 
-    date = models.DateField('data', validators=[validate_date])
+    date = models.DateField('data',
+                            validators=[validate_date],
+                            help_text='Formato DD/MM/AAAA',
+                            unique_for_date=True)
     note = models.CharField('descrição', max_length=50)
 
     class Meta:
         verbose_name_plural = 'dias não úteis'
         verbose_name = 'dia não útil'
-        ordering = ('date',)
+        ordering = ['date']
 
     def __str__(self):
         return '{}: {}'.format(self.date, self.note)

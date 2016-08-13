@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+
+{% block content %}
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <h3>Entradas registradas sem as correspondentes saídas</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Usuário</th>
+                        <th>Data</th>
+                        <th>Entrada registrada às</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in regs %}
+                        <tr>
+                            <td>{{ reg.pk }}</td>
+                            <td>{{ reg.name }}</td>
+                            <td>{{ reg.date|localtime|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ reg.date|localtime|date:"H:i:s" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <a href="/admin/core/timing/add/" target="_blank">Adicionar registro manualmente</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
