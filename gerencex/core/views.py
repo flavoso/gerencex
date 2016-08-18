@@ -5,7 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
-from gerencex.core.models import Timing
+from django.views.generic import ListView
+from gerencex.core.models import Timing, Restday
 
 
 @login_required
@@ -73,7 +74,7 @@ def forgotten_checkouts(request):
     for idx in range(0, lim):
         t1 = tickets[idx]
         t2 = tickets[idx + 1]
-        if t1.user == t2.user and t1.checkin == t2.checkin == True:
+        if t1.user == t2.user and t1.checkin and t2.checkin:
             regs.append({
                 'pk': t1.pk,
                 'name': t1.user.first_name,
@@ -87,6 +88,9 @@ def restday_new(request):
 
 def restday(request, date):
     return render(request, 'restday.html')
+
+class RestdayList(ListView):
+    model = Restday
 
 def bhauditor(request):
     return render(request, 'bhauditor.html')

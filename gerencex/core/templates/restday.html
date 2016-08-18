@@ -4,7 +4,29 @@
 
 {% block content %}
 <section class="container-fluid">
-
+<div class="row">
+    <h2>Feriados e pontos facultativos</h2>
+</div>
+<div class="row">
+    <table class="table">
+        <thead>
+            <tr>
+                <td>Data</td>
+                <td>Descrição</td>
+                <td>Carga Horária</td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for restday in restday_list %}
+            <tr>
+                <td>{{ restday.date|date:"SHORT_DATE_FORMAT" }}</td>
+                <td>{{ restday.note }}</td>
+                <td>{{ restday.work_hours|date:"H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 </section>
 
 {% endblock %}

@@ -218,19 +218,21 @@ class RestdayModelTest(TestCase):
     def setUpTestData(cls):
         cls.date = Restday.objects.create(
             date=datetime.date(2016, 8, 4),
-            note='Jogos olímpicos'
+            note='Jogos olímpicos',
+            work_hours=datetime.timedelta(0)
         )
 
     def test_create(self):
         self.assertTrue(Restday.objects.exists())
 
+    # def test_work_hours_is_zero_by_default(self):
 
 class RestdayFormTest(TestCase):
 
     def test_form_has_fields(self):
         """Form must have 2 fields"""
         form = RestdayForm()
-        expected = ('date', 'note')
+        expected = ('date', 'note', 'work_hours')
         self.assertSequenceEqual(expected, list(form.fields))
 
     def test_weekend_raises_error(self):

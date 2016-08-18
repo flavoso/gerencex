@@ -5,4 +5,4 @@ from gerencex.core.models import Restday, Timing
 class RestdayForm(forms.ModelForm):
     class Meta:
         model = Restday
-        fields = ['date', 'note']
+        fields = ['date', 'note', 'work_hours']

@@ -15,9 +15,9 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from gerencex.core.views import home, bhauditor, bhoras, timing, restday_new, timing_new, \
-    timing_fail, restday, forgotten_checkouts
 from django.contrib.auth.views import logout
+from gerencex.core.views import home, bhauditor, bhoras, timing, restday_new, timing_new, \
+    timing_fail, forgotten_checkouts, RestdayList
 
 urlpatterns = [
     url('^logout/$', logout, {'next_page': 'home'}, name='logout'),
@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'^registro_de_ponto/saidas_nao_registradas/', forgotten_checkouts,
         name='forgotten_checkouts'),
     url(r'^folgas/nova$', restday_new, name='restday_new'),
-    url(r'^folgas/(?P<date>\d\d-\d\d-\d{4,4})/$', restday, name='restday'),
+    # url(r'^folgas/(?P<year>20\d\d)/-\d\d-\d{4,4})/$', restday, name='restday'),
+    url(r'^folgas/$', RestdayList.as_view(), 'folgas'),
     url(r'^admin/', admin.site.urls),
 ]

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
@@ -45,8 +47,9 @@ class Restday(models.Model):
     date = models.DateField('data',
                             validators=[validate_date],
                             help_text='Formato DD/MM/AAAA',
-                            unique_for_date=True)
+                            unique=True)
     note = models.CharField('descrição', max_length=50)
+    work_hours = models.DurationField('carga horária', default=timedelta(hours=0))
 
     class Meta:
         verbose_name_plural = 'dias não úteis'
@@ -54,4 +57,4 @@ class Restday(models.Model):
         ordering = ['date']
 
     def __str__(self):
-        return '{}: {}'.format(self.date, self.note)
+        return '{}: {} ({}) horas'.format(self.date, self.note, self.work_hours)
