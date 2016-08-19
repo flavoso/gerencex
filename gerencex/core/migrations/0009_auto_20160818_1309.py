@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import gerencex
 
 
 class Migration(migrations.Migration):
@@ -14,7 +15,10 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterField(
             model_name='restday',
-            name='work_hours',
-            field=models.DurationField(default=0, verbose_name='carga horária'),
+            name='date',
+            field=models.DateField(help_text='Formato DD/MM/AAAA',
+                                   unique=True,
+                                   validators=[gerencex.core.validators.validate_date],
+                                   verbose_name='data'),
         ),
     ]
