@@ -58,3 +58,22 @@ class Restday(models.Model):
 
     def __str__(self):
         return '{}: {} ({}) horas'.format(self.date, self.note, self.work_hours)
+
+
+class HoursBalance(models.Model):
+
+    date = models.DateField('data',)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='hours')
+    credit = models.DurationField('crédito')
+    debit = models.DurationField('débito', default=timedelta(hours=7))
+    daily_balance = models.DurationField('saldo diário')
+    total_balance = models.DurationField('saldo acumulado')
+
+    class Meta:
+        verbose_name = 'banco de horas'
+        ordering = ['date', 'user']
+
+    def __str__(self):
+        return '{} -- {} : {} horas'.format(self.date, self.user, self.daily_balance)

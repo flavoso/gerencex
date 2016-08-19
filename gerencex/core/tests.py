@@ -6,7 +6,7 @@ from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
 from gerencex.core.forms import RestdayForm
-from gerencex.core.models import UserDetail, Timing, Restday
+from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance
 
 
 class LogIn(TestCase):
@@ -225,7 +225,6 @@ class RestdayModelTest(TestCase):
     def test_create(self):
         self.assertTrue(Restday.objects.exists())
 
-    # def test_work_hours_is_zero_by_default(self):
 
 class RestdayFormTest(TestCase):
 
@@ -257,16 +256,22 @@ class RestdayFormTest(TestCase):
         return form
 
 
-class NewRestdayViewTest(TestCase):
+class HoursBalanceModelTest(TestCase):
 
-    def setUp(self):
-        self.response = self.client.get(r('restday_new'))
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        cls.date = HoursBalance.objects.create(
+            date=datetime.date(2016, 8, 18),
+            user=cls.user,
+            credit=datetime.timedelta(hours=6),
+            debit=datetime.timedelta(hours=7),
+            daily_balance=datetime.timedelta(hours=-1),
+            total_balance=datetime.timedelta(hours=3),
+        )
 
-    def test_get(self):
-        self.assertEqual(200, self.response.status_code)
-
-    def test_template(self):
-        self.assertTemplateUsed(self.response, 'newrestday.html')
+    def test_create(self):
+        self.assertTrue(HoursBalance.objects.exists())
 
 
 def activate_timezone():
