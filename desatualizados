@@ -1,0 +1,10 @@
+dj-database-url
+Django
+django-bootstrap-form
+django-extensions
+ipython
+pexpect
+pickleshare
+prompt-toolkit
+setuptools
+static3

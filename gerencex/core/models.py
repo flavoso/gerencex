@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import signals
 from django.utils import timezone
 from gerencex.core.validators import validate_date
 
@@ -68,12 +69,17 @@ class HoursBalance(models.Model):
                              related_name='hours')
     credit = models.DurationField('crédito')
     debit = models.DurationField('débito', default=timedelta(hours=7))
-    daily_balance = models.DurationField('saldo diário')
-    total_balance = models.DurationField('saldo acumulado')
+    balance = models.DurationField('saldo acumulado')
+    # credit = models.IntegerField('crédito')
+    # debit = models.IntegerField('débito', default=7)
+    # balance = models.IntegerField('saldo acumulado')
 
     class Meta:
         verbose_name = 'banco de horas'
         ordering = ['date', 'user']
+        unique_together = ('date', 'user')
+        index_together = ['date', 'user']
+        get_latest_by = 'date'
 
     def __str__(self):
-        return '{} -- {} : {} horas'.format(self.date, self.user, self.daily_balance)
+        return '{} -- {} : {} horas'.format(self.date, self.user, self.balance)
