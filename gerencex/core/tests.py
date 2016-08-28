@@ -262,41 +262,23 @@ class HoursBalanceModelTest(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
 
-    # def test_create_first(self):
-    #     r1 = HoursBalance.objects.create(
-    #         date=datetime.date(2016, 8, 18),
-    #         user=self.user,
-    #         credit=6,
-    #         debit=7,
-    #     )
-    #     self.assertTrue(HoursBalance.objects.exists())
-    #     self.assertEqual(r1.balance, -1)
-    #
-    #     r2 = HoursBalance.objects.create(
-    #         date=datetime.date(2016, 8, 19),
-    #         user=self.user,
-    #         credit=6,
-    #         debit=7,
-    #     )
-    #     self.assertEqual(r2.balance, -2)
-
     def test_create_first(self):
         r1 = HoursBalance.objects.create(
             date=datetime.date(2016, 8, 18),
             user=self.user,
-            credit=datetime.timedelta(hours=6),
-            debit=datetime.timedelta(hours=7),
+            credit=datetime.timedelta(hours=6).seconds,
+            debit=datetime.timedelta(hours=7).seconds,
         )
         self.assertTrue(HoursBalance.objects.exists())
-        self.assertEqual(r1.balance, datetime.timedelta(hours=-1))
+        self.assertEqual(r1.balance, int(datetime.timedelta(hours=-1).total_seconds()))
 
         r2 = HoursBalance.objects.create(
             date=datetime.date(2016, 8, 19),
             user=self.user,
-            credit=datetime.timedelta(hours=6),
-            debit=datetime.timedelta(hours=7),
+            credit=datetime.timedelta(hours=6).seconds,
+            debit=datetime.timedelta(hours=7).seconds,
         )
-        self.assertEqual(r2.balance, datetime.timedelta(hours=-2))
+        self.assertEqual(r2.balance, int(datetime.timedelta(hours=-2).total_seconds()))
 
 
 def activate_timezone():

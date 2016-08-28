@@ -67,12 +67,9 @@ class HoursBalance(models.Model):
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
                              related_name='hours')
-    credit = models.DurationField('crédito')
-    debit = models.DurationField('débito', default=timedelta(hours=7))
-    balance = models.DurationField('saldo acumulado')
-    # credit = models.IntegerField('crédito')
-    # debit = models.IntegerField('débito', default=7)
-    # balance = models.IntegerField('saldo acumulado')
+    credit = models.IntegerField('crédito')
+    debit = models.IntegerField('débito', default=timedelta(hours=7).seconds)
+    balance = models.IntegerField('saldo acumulado')
 
     class Meta:
         verbose_name = 'banco de horas'
@@ -82,4 +79,4 @@ class HoursBalance(models.Model):
         get_latest_by = 'date'
 
     def __str__(self):
-        return '{} -- {} : {} horas'.format(self.date, self.user, self.balance)
+        return '{} -- {} : {}'.format(self.date, self.user, str(self.balance))
