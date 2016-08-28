@@ -21,11 +21,11 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('date', models.DateField(verbose_name='data')),
-                ('credit', models.DurationField(verbose_name='crédito')),
-                ('debit', models.DurationField(default=datetime.timedelta(0, 25200), verbose_name='débito')),
-                ('daily_balance', models.DurationField(verbose_name='saldo diário')),
-                ('total_balance', models.DurationField(verbose_name='saldo acumulado')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='hours', to=settings.AUTH_USER_MODEL)),
+                ('credit', models.IntegerField(verbose_name='crédito')),
+                ('debit', models.IntegerField(default=25200, verbose_name='débito')),
+                ('balance', models.IntegerField(verbose_name='saldo acumulado')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                           related_name='hours', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'verbose_name': 'banco de horas',
