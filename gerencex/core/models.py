@@ -68,7 +68,7 @@ class HoursBalance(models.Model):
                              on_delete=models.CASCADE,
                              related_name='hours')
     credit = models.IntegerField('crédito')
-    debit = models.IntegerField('débito', default=timedelta(hours=7).seconds)
+    debit = models.IntegerField('débito')
     balance = models.IntegerField('saldo acumulado')
 
     class Meta:

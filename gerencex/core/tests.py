@@ -262,16 +262,21 @@ class HoursBalanceModelTest(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
 
-    def test_create_first(self):
+    def test_balances(self):
         r1 = HoursBalance.objects.create(
             date=datetime.date(2016, 8, 18),
             user=self.user,
             credit=datetime.timedelta(hours=6).seconds,
             debit=datetime.timedelta(hours=7).seconds,
         )
+
+        # Test creation
         self.assertTrue(HoursBalance.objects.exists())
+
+        # First balance is calculated without a previous balance
         self.assertEqual(r1.balance, int(datetime.timedelta(hours=-1).total_seconds()))
 
+        # Second balance takes the first balance into account
         r2 = HoursBalance.objects.create(
             date=datetime.date(2016, 8, 19),
             user=self.user,
@@ -280,6 +285,13 @@ class HoursBalanceModelTest(TestCase):
         )
         self.assertEqual(r2.balance, int(datetime.timedelta(hours=-2).total_seconds()))
 
+        # Change in first credit or debit must change the second balance
+
+        r1.credit = datetime.timedelta(hours=7).seconds
+        r1.save()
+        r2 = HoursBalance.objects.get(pk=2)
+        # r2.save()
+        self.assertEqual(r2.balance, int(datetime.timedelta(hours=-1).total_seconds()))
 
 def activate_timezone():
         return timezone.activate(pytz.timezone('America/Sao_Paulo'))
