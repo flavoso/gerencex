@@ -73,6 +73,7 @@ class HoursBalance(models.Model):
 
     class Meta:
         verbose_name = 'banco de horas'
+        verbose_name_plural = 'banco de horas'
         ordering = ['date', 'user']
         unique_together = ('date', 'user')
         index_together = ['date', 'user']

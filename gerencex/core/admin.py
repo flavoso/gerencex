@@ -8,7 +8,7 @@ from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance
 
 # Define an inline admin descriptor for Employee model
 # which acts a bit like a singleton
-class UserDetailInLine(admin.StackedInline):
+class UserDetailInLine(admin.TabularInline):
     model = UserDetail
     can_delete = False
     verbose_name_plural = 'detalhes'
@@ -24,6 +24,17 @@ class TimingAdmin(admin.ModelAdmin):
     date_hierarchy = 'date_time'
 
 
+class RestdayAdmin(admin.ModelAdmin):
+    list_display = ('date', 'note', 'work_hours')
+    list_filter = ('date',)
+
+
+class HoursBalanceAdmin(admin.ModelAdmin):
+    list_display = ('date', 'user', 'credit', 'debit', 'balance')
+    list_filter = ('date', 'user')
+    date_hierarchy = 'date'
+
+
 # Re-register UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
@@ -32,5 +43,5 @@ admin.site.register(User, UserAdmin)
 # Register your models here.
 
 admin.site.register(Timing, TimingAdmin)
-admin.site.register(Restday)
-admin.site.register(HoursBalance)
+admin.site.register(Restday, RestdayAdmin)
+admin.site.register(HoursBalance, HoursBalanceAdmin)
