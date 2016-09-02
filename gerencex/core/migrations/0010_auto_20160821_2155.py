@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('date', models.DateField(verbose_name='data')),
                 ('credit', models.IntegerField(verbose_name='crédito')),
-                ('debit', models.IntegerField(default=25200, verbose_name='débito')),
+                ('debit', models.IntegerField(verbose_name='débito')),
                 ('balance', models.IntegerField(verbose_name='saldo acumulado')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
                                            related_name='hours', to=settings.AUTH_USER_MODEL)),
