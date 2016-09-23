@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import signals
 from django.utils import timezone
 from gerencex.core.validators import validate_date
 
@@ -79,5 +78,64 @@ class HoursBalance(models.Model):
         index_together = ['date', 'user']
         get_latest_by = 'date'
 
+    def time_credit(self):
+        return str(timedelta(seconds=self.credit))
+
+    def time_debit(self):
+        return str(timedelta(seconds=self.debit))
+
+    def time_balance(self):
+        if self.balance < 0:
+            return '-{}'.format(timedelta(seconds=abs(self.balance)))
+        return str(timedelta(self.balance))
+
+    time_credit.short_description = 'crédito'
+    time_debit.short_description = 'débito'
+    time_balance.short_description = 'saldo'
+
     def __str__(self):
         return '{} -- {} : {}'.format(self.date, self.user, str(self.balance))
+
+
+class Absences(models.Model):
+
+    CURSO = 'CR'
+    CEDIDO = 'CD'
+    INSPECAO = 'IN'
+    FERIAS = 'FR'
+    LIC_MEDICA = 'LM'
+    LIC_PREMIO = 'LP'
+    LIC_POLIT = 'LA'
+    GOZO_RECESSO = 'GR'
+    OUTROS = 'OU'
+
+    ABSENCES_CHOICES = (
+        (CURSO, 'Curso'),
+        (CEDIDO, 'Cedido para outra unidade'),
+        (INSPECAO, 'Inspeção'),
+        (FERIAS, 'Período de férias (formal)'),
+        (LIC_MEDICA, 'Licença médica'),
+        (LIC_PREMIO, 'Licença-prêmio'),
+        (LIC_POLIT, 'Licença para atividade política'),
+        (GOZO_RECESSO, 'Gozo do recesso (formal)'),
+        (OUTROS, 'Outros afastamentos'),
+    )
+
+    date = models.DateField('data',)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='absences')
+    cause = models.CharField('motivo', max_length=2, choices=ABSENCES_CHOICES, default=FERIAS)
+    credit = models.IntegerField('crédito')
+    debit = models.IntegerField('débito')
+
+    class Meta:
+        verbose_name = 'Afastamento'
+        verbose_name_plural = 'Afastamentos'
+        ordering = ['user', '-date']
+        unique_together = ('date', 'user')
+        index_together = ['date', 'user']
+        get_latest_by = 'date'
+
+    def __str__(self):
+        return '{} -- {} : {}'.format(self.date, self.user, self.cause)

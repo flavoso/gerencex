@@ -2,11 +2,13 @@ from datetime import timedelta, datetime
 
 import pytz
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
 from django.views.generic import ListView
-from gerencex.core.models import Timing, Restday
+from gerencex.core.forms import AbsencesForm
+from gerencex.core.models import Timing, Restday, Absences
 
 
 @login_required
@@ -83,20 +85,55 @@ def forgotten_checkouts(request):
 
     return render(request, 'forgotten_checkouts.html', {'regs': regs})
 
+
+def absence_new(request):
+
+    if request.method == 'POST':
+        form = AbsencesForm(request.POST)
+        if form.is_valid():
+            credit = form.cleaned_data['credit'].seconds
+            debit = form.cleaned_data['debit'].seconds
+            date = form.cleaned_data['begin']
+            while date <= form.cleaned_data['end']:
+                absence = Absences(date=date,
+                                   user=form.cleaned_data['user'],
+                                   cause=form.cleaned_data['cause'],
+                                   credit=credit,
+                                   debit=debit,
+                                   )
+                absence.save()
+                date += timedelta(days=1)
+            return HttpResponseRedirect(r('absences', username=form.cleaned_data['user'].username))
+    else:
+        form = AbsencesForm()
+        return render(request, 'newabsence.html', {'form': form})
+
+
+def absences(request, username):
+    user = User.objects.get(username=username)
+    data = Absences.objects.filter(user=user)
+
+    return render(request, 'absences.html', {'absences': data})
+
 def restday_new(request):
     return render(request, 'newrestday.html')
+
 
 def restday(request, date):
     return render(request, 'restday.html')
 
+
 class RestdayList(ListView):
     model = Restday
+
 
 def bhauditor(request):
     return render(request, 'bhauditor.html')
 
+
 def bhoras(request):
     return render(request, 'bhoras.html')
+
 
 def activate_timezone():
     timezone.activate(pytz.timezone('America/Sao_Paulo'))

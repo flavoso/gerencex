@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib import admin
 
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -27,10 +29,11 @@ class TimingAdmin(admin.ModelAdmin):
 class RestdayAdmin(admin.ModelAdmin):
     list_display = ('date', 'note', 'work_hours')
     list_filter = ('date',)
+    date_hierarchy = 'date'
 
 
 class HoursBalanceAdmin(admin.ModelAdmin):
-    list_display = ('date', 'user', 'credit', 'debit', 'balance')
+    list_display = ('date', 'user', 'time_credit', 'time_debit', 'time_balance')
     list_filter = ('date', 'user')
     date_hierarchy = 'date'
 

@@ -6,7 +6,7 @@ from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
 from gerencex.core.forms import RestdayForm
-from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance
+from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance, Absences
 
 
 class LogIn(TestCase):
@@ -292,6 +292,24 @@ class HoursBalanceModelTest(TestCase):
         r2 = HoursBalance.objects.get(pk=2)
         # r2.save()
         self.assertEqual(r2.balance, int(datetime.timedelta(hours=-1).total_seconds()))
+
+
+class AbsencesModelTest(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+
+    def test_create(self):
+        a = Absences.objects.create(
+            date=datetime.date(2016, 9, 5),
+            user=self.user,
+            cause='curso',
+            credit=25200,
+            debit=0
+        )
+
+        self.assertTrue(Absences.objects.exists())
 
 def activate_timezone():
         return timezone.activate(pytz.timezone('America/Sao_Paulo'))

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load bootstrap %}
+
+{% block head %}
+    <!-- Bootstrap Date Picker -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.min.css"
+        integrity="sha256-nFp4rgCvFsMQweFQwabbKfjrBwlaebbLkE29VFR0K40="
+        crossorigin="anonymous" />
+{% endblock %}
+
+{% block content %}
+<section class="container-fluid">
+<div class="row">
+    <div class="col-sm-4 col-sm-offset-1">
+        <h2>Cadastrar novo afastamento</h2>
+            <form action={% url 'absence_new' %} method="post">
+                {% csrf_token %}
+                {{ form|bootstrap }}
+                <div class="form-group">
+                    <input type="submit" value="Cadastrar" class="btn btn-primary" />
+                </div>
+            </form>
+    </div>
+</div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+    <!-- Bootstrap Date Picker -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js"
+        integrity="sha256-urCxMaTtyuE8UK5XeVYuQbm/MhnXflqZ/B9AOkyTguo="
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/locales/bootstrap-datepicker.pt-BR.min.js"
+        integrity="sha256-QN6KDU+9DIJ/9M0ynQQfw/O90ef0UXucGgKn0LbUtq4="
+        crossorigin="anonymous"></script>
+    <script>
+    $(function() {
+        $( ".datepicker" ).datepicker({
+        format: 'dd/mm/yyyy',
+        language: 'pt-BR',
+        });
+    });
+    </script>
+
+{% endblock %}
