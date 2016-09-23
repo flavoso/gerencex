@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     # 'gerencex.core.apps.CoreConfig',
     'bootstrapform',
     'test_without_migrations',
-    'datetimewidget',
 ]
 
 MIDDLEWARE = [
