@@ -15,12 +15,13 @@ from gerencex.core.models import Timing, Restday, Absences
 def home(request):
     return render(request, 'index.html')
 
+
 @login_required
 def timing_new(request):
     activate_timezone()
 
     if request.method == 'POST':
-        if request.user.userdetail.atwork == True:
+        if request.user.userdetail.atwork:
             request.user.userdetail.atwork = False
             request.user.userdetail.save()
             ticket = Timing(user=request.user, checkin=False, created_by=request.user)
@@ -45,6 +46,7 @@ def timing_new(request):
         return HttpResponseRedirect(r('timing', ticket.pk))
     return render(request, 'timing_new_not_post.html')
 
+
 @login_required
 def timing(request, pk):
     activate_timezone()
@@ -59,9 +61,11 @@ def timing(request, pk):
         context['time'] = ticket.date_time + timedelta(minutes = 5)
     return render(request, 'timing.html', context)
 
+
 @login_required
 def timing_fail(request):
     return render(request, 'timing_fail.html')
+
 
 def forgotten_checkouts(request):
     """Get the check ins which have no check outs at the same day, via an indirect approach: two
@@ -104,6 +108,8 @@ def absence_new(request):
                 absence.save()
                 date += timedelta(days=1)
             return HttpResponseRedirect(r('absences', username=form.cleaned_data['user'].username))
+        else:
+            return render(request, 'newabsence.html', {'form': form})
     else:
         form = AbsencesForm()
         return render(request, 'newabsence.html', {'form': form})
@@ -111,29 +117,42 @@ def absence_new(request):
 
 def absences(request, username):
     user = User.objects.get(username=username)
-    data = Absences.objects.filter(user=user)
+    data = []
+    for d in Absences.objects.filter(user=user).all():
+        data.append({'date': d.date,
+                     'cause': d.get_cause_display(),
+                     'credit': timedelta(seconds=d.credit),
+                     'debit': timedelta(seconds=d.debit)})
 
-    return render(request, 'absences.html', {'absences': data})
-
-def restday_new(request):
-    return render(request, 'newrestday.html')
-
-
-def restday(request, date):
-    return render(request, 'restday.html')
-
-
-class RestdayList(ListView):
-    model = Restday
+    return render(request, 'absences.html', {'absences': data,
+                                             'first_name': user.first_name,
+                                             'last_name': user.last_name})
 
 
-def bhauditor(request):
-    return render(request, 'bhauditor.html')
+@login_required
+def hours_bank(request):
+    render(request, 'hours_bank.html')
 
 
-def bhoras(request):
-    return render(request, 'bhoras.html')
+@login_required
+def my_hours_bank(request, username):
+    render(request, 'my_hours_bank.html', {'username': username})
+
+
+@login_required
+def rules(request):
+    render(request, 'rules.html')
 
 
 def activate_timezone():
     timezone.activate(pytz.timezone('America/Sao_Paulo'))
+
+
+def calculate_credit(user, date):
+    """Crédito é calculado da seguinte forma: para cada dia, somam-se as parcelas compostas pela
+       * soma das diferenças entre horas de saída e de entrada (tabela "Timing");
+       * soma dos créditos eventualmente existentes na tabela "Absences"
+    """
+    tickets = [x for x in Timing.objects.filter(user=user, date_time__date=date).all()]
+    if len(tickets) % 2 != 0:
+        del tickets[-1]

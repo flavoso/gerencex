@@ -113,7 +113,7 @@ class Absences(models.Model):
         (CURSO, 'Curso'),
         (CEDIDO, 'Cedido para outra unidade'),
         (INSPECAO, 'Inspeção'),
-        (FERIAS, 'Período de férias (formal)'),
+        (FERIAS, 'Férias (formal)'),
         (LIC_MEDICA, 'Licença médica'),
         (LIC_PREMIO, 'Licença-prêmio'),
         (LIC_POLIT, 'Licença para atividade política'),
@@ -126,8 +126,8 @@ class Absences(models.Model):
                              on_delete=models.CASCADE,
                              related_name='absences')
     cause = models.CharField('motivo', max_length=2, choices=ABSENCES_CHOICES, default=FERIAS)
-    credit = models.IntegerField('crédito')
-    debit = models.IntegerField('débito')
+    credit = models.IntegerField('crédito', default=0)
+    debit = models.IntegerField('débito', default=0)
 
     class Meta:
         verbose_name = 'Afastamento'

@@ -4,27 +4,43 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Gerencex{% endblock title %}</title>
+    <title>{% block title %}Audite-me{% endblock title %}</title>
 
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
-          crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Customizações do CSS -->
     <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
-{#    <link href='https://fonts.googleapis.com/css?family=Ubuntu:700' rel='stylesheet' type='text/css'>#}
-    {% block head %}
-    {% endblock %}
+
+{% block head %}
+{% endblock %}
+
 </head>
 <body>
     <header class="container-fluid">
     <nav class="navbar navbar-default" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="/">Gerencex</a>
+                <a class="navbar-brand" href="/">Audite-me</a>
             </div>
             <ul class="nav navbar-nav">
-                <li><a href="/bancodehoras/">Banco de Horas</a></li>
-                <li><a href="#">Afastamentos</a></li>
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                        Banco de horas <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{% url 'my_hours_bank' user.username %}">Meu banco de horas</a></li>
+                            <li><a href="{% url 'absences' user.username %}">Meus afastamentos</a></li>
+                            <li><a href="{% url 'forgotten_checkouts' %}">Minhas saídas não registradas</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="{% url 'hours_bank' %}">Banco de horas da Divisão</a></li>
+                            <li><a href="{% url 'rules' %}">Regras</a></li>
+                        </ul>
+                </li>
                 <li><a href="#">Produtividade</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
@@ -42,16 +58,14 @@
                     </form>
                     </div>
                 </li>
-                <li><a href="{% url 'logout' %}">Logout</a></li>
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                        Olá {{ user.first_name }}! <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{% url 'logout' %}">Logout</a></li>
+                        </ul>
+                </li>
             </ul>
-{#            <p class="navbar-text navbar-right">#}
-{#                {% if user.is_authenticated %}#}
-{#                    Olá, <strong> {{ user.first_name }}</strong>!#}
-{#                    <a href="{% url 'logout' %}">#}
-{#                        <span class="glyphicon glyphicon-log-out" aria-hidden="true"></span>#}
-{#                    </a>#}
-{#                {% endif %}#}
-{#            </p>#}
         </div>
     </nav>
     </header>
@@ -63,13 +77,14 @@
       </div>
     </footer>
 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
-            integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ=="
-            crossorigin="anonymous"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+
 
 {% block scripts %}
 {% endblock %}
