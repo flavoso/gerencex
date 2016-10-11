@@ -5,8 +5,10 @@ from django.contrib.auth.models import User
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
+from gerencex.core import parameters
 from gerencex.core.forms import RestdayForm
 from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance, Absences
+from gerencex.core.views import calculate_credit, calculate_debit
 
 
 class LogIn(TestCase):
@@ -42,6 +44,8 @@ class HomeTest(TestCase):
 class NotFound(TestCase):
 
     def setUp(self):
+        User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        self.client.login(username='testuser', password='senha123')
         self.response = self.client.get('/nao-encontrada/')
 
     def test_get(self):
@@ -55,16 +59,18 @@ class NotFound(TestCase):
 
 class LogOut(TestCase):
 
-     def setUp(self):
-         self.response = self.client.get(r('logout'), follow=True)
+    def setUp(self):
+        self.response = self.client.get(r('logout'), follow=True)
+        User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        self.client.login(username='testuser', password='senha123')
 
-     def test_get(self):
-         """GET must return status code 200"""
-         self.assertEqual(200, self.response.status_code)
+    def test_get(self):
+        """GET must return status code 200"""
+        self.assertEqual(200, self.response.status_code)
 
-     def test_template(self):
-         """Must use index.html"""
-         self.assertTemplateUsed(self.response, 'registration/login.html')
+    def test_template(self):
+        """Must use index.html"""
+        self.assertTemplateUsed(self.response, 'registration/login.html')
 
 
 class UserDetailTest(TestCase):
@@ -73,7 +79,6 @@ class UserDetailTest(TestCase):
         User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user = User.objects.get(username='testuser')
         UserDetail.objects.create(user=self.user)
-
 
     def test_at_work(self):
         """User must have an 'at work' boolean, whose default is False"""
@@ -157,6 +162,7 @@ class ForgottenCheckoutsViewTest(TestCase):
         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user.first_name = 'ze mane'
         self.user.save()
+        self.client.login(username='testuser', password='senha123')
 
     def test_get(self):
         self.resp = self.client.get(r('forgotten_checkouts'))
@@ -310,6 +316,73 @@ class AbsencesModelTest(TestCase):
         )
 
         self.assertTrue(Absences.objects.exists())
+
+
+class CreditCalculationTest(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+
+    def test_credit(self):
+        activate_timezone()
+        t1 = Timing.objects.create(
+                 user=self.user,
+                 date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 7, 0, 0, 0)),
+                 checkin=True
+            )
+        t2 = Timing.objects.create(
+                 user=self.user,
+                 date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 21, 0, 0, 0)),
+                 checkin=False
+            )
+        # a1 = Absences.objects.create(
+        #          user=self.user,
+        #          date=datetime.date(2016, 10, 3),
+        #          credit=datetime.timedelta(hours=4).seconds,
+        #          debit=0
+        #      )
+
+        credit = calculate_credit(user=self.user, date=datetime.date(2016, 10, 3))
+        tolerance = parameters.CHECKOUT_TOLERANCE - parameters.CHECKIN_TOLERANCE
+
+        self.assertEqual(datetime.timedelta(hours=14) + tolerance, credit)
+
+    def test_debit_normal_day(self):
+        """
+        Normal day:     debit = REGULAR_WORK_HOURS
+        """
+
+        debit = calculate_debit(user=self.user, date=datetime.date(2016, 10, 10))
+        self.assertEqual(parameters.REGULAR_WORK_HOURS, debit)
+
+    def test_debit_restday(self):
+        """
+        Restday:        debit = 0
+        """
+        Restday.objects.create(
+            date=datetime.date(2016, 10, 12),
+            note='Feriado N. Sª Aparecida',
+            work_hours=datetime.timedelta(hours=0)
+        )
+        debit = calculate_debit(user=self.user, date=datetime.date(2016, 10, 12))
+        self.assertEqual(datetime.timedelta(hours=0), debit)
+
+    def test_debit_absence_day(self):
+        """
+        Absence day:    debit = REGULAR_WORK_HOURS + absence.debit
+        """
+
+        Absences.objects.create(
+            date=datetime.date(2016, 10, 10),
+            user=self.user,
+            cause='LM',
+            credit=0,
+            debit=-25200
+        )
+        debit = calculate_debit(user=self.user, date=datetime.date(2016, 10, 10))
+        self.assertEqual(datetime.timedelta(hours=0), debit)
+
 
 def activate_timezone():
         return timezone.activate(pytz.timezone('America/Sao_Paulo'))

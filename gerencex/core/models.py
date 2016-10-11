@@ -1,8 +1,9 @@
-from datetime import timedelta
+from datetime import timedelta, time
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+from gerencex.core import parameters
 from gerencex.core.validators import validate_date
 
 
@@ -14,6 +15,12 @@ class UserDetail(models.Model):
                                 primary_key=True
                                 )
     atwork = models.BooleanField(default=False)
+    office = models.ForeignKey('Office',
+                               models.SET_NULL,
+                               null=True,
+                               blank=True,
+                               related_name='users'
+                               )
 
     def __str__(self):
         return self.user.username
@@ -21,13 +28,14 @@ class UserDetail(models.Model):
 
 class Timing(models.Model):
     user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
+                             models.CASCADE,
                              related_name='tickets')
     date_time = models.DateTimeField(default=timezone.now)
     checkin = models.BooleanField(default=True)
     created_by = models.ForeignKey(User,
-                                   on_delete=models.CASCADE,
-                                   null=True)
+                                   models.SET_NULL,
+                                   null=True,
+                                   blank=True)
 
     class Meta:
         verbose_name_plural = 'registros de entrada e saída'
@@ -64,7 +72,7 @@ class HoursBalance(models.Model):
 
     date = models.DateField('data',)
     user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
+                             models.CASCADE,
                              related_name='hours')
     credit = models.IntegerField('crédito')
     debit = models.IntegerField('débito')
@@ -107,6 +115,7 @@ class Absences(models.Model):
     LIC_PREMIO = 'LP'
     LIC_POLIT = 'LA'
     GOZO_RECESSO = 'GR'
+    FALTA = 'FT'
     OUTROS = 'OU'
 
     ABSENCES_CHOICES = (
@@ -118,12 +127,13 @@ class Absences(models.Model):
         (LIC_PREMIO, 'Licença-prêmio'),
         (LIC_POLIT, 'Licença para atividade política'),
         (GOZO_RECESSO, 'Gozo do recesso (formal)'),
+        (FALTA, 'Falta não justificada'),
         (OUTROS, 'Outros afastamentos'),
     )
 
     date = models.DateField('data',)
     user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
+                             models.CASCADE,
                              related_name='absences')
     cause = models.CharField('motivo', max_length=2, choices=ABSENCES_CHOICES, default=FERIAS)
     credit = models.IntegerField('crédito', default=0)
@@ -139,3 +149,38 @@ class Absences(models.Model):
 
     def __str__(self):
         return '{} -- {} : {}'.format(self.date, self.user, self.cause)
+
+
+class Office(models.Model):
+    """
+    'TCU' stands for Tribunal de Contas da União, the brazilian federal court for account
+    settlement, similar to U.S. Government Accountability Office (U.S. GAO)
+    """
+    nome = models.CharField('nome', max_length=100)
+    initials = models.CharField('sigla', max_length=15)
+    active = models.BooleanField('unidade ativa', default=True)
+    regular_work_hours = models.DurationField('jornada diária',
+                                              default=timedelta(hours=7))           # TCU: 10 hours
+    max_daily_credit = models.BooleanField('restrição de jornada diária máxima',
+                                                default=False)
+    max_daily_credit_value = models.DurationField('restrição de valor da máxima jornada diária',
+                                                  default=timedelta(hours=10))      # TCU: 10 hours
+    max_monthly_balance = models.BooleanField('restrição de saldo mensal máximo de horas',
+                                              default=False)
+    max_monthly_balance_value = models.DurationField('valor do saldo mensal máximo',
+                                                     default=timedelta(hours=20))   # TCU: 20 hours
+    min_checkin_time = models.BooleanField('restrição de horário mínimo para entrada',
+                                           default=False)
+    min_checkin_time_value = models.TimeField('horário mínimo para entrada',
+                                              default=time(8, 0, 0))                # TCU: 08h00
+    max_checkout_time = models.BooleanField('restrição de horário máximo para saída',
+                                            default=False)
+    max_checkout_time_value = models.TimeField('horário máximo para saída',
+                                               default=time(20, 0, 0))              # TCU: 20h00
+    checkin_tolerance = models.DurationField('tolerância para entrada',
+                                             default=timedelta(minutes=-10))
+    checkout_tolerance = models.DurationField('tolerância para saída',
+                                              default=timedelta(minutes=5))
+
+    def __str__(self):
+        return '{}'.format(self.initials)

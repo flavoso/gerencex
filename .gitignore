@@ -1,10 +1,8 @@
 .venv
 .env
 .idea
-a_fazer.mm
 Desenvolvimento.mm
 historico.mm
-Roadmap.mm
 *.sqlite3
 *pyc
 __pycache__
@@ -13,4 +11,3 @@ __pycache__
 rotina_saldo_banco_horas.odt
 ~*
 apache
-desatualizados
