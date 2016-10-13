@@ -1,8 +1,9 @@
 from datetime import timedelta
 
+from django.contrib.auth.models import User
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from gerencex.core.models import HoursBalance
+from gerencex.core.models import HoursBalance, UserDetail
 
 
 @receiver(pre_save, sender=HoursBalance)
@@ -27,3 +28,14 @@ def next_balance_handler(sender, instance, created, **kwargs):
         next_bal = sender.objects.filter(user=instance.user, date__gt=instance.date).first()
         if next_bal and next_bal.pk != instance.pk:
             next_bal.save()
+
+
+@receiver(post_save, sender=User)
+def create_user_userdetail(sender, instance, created, **kwargs):
+    if created:
+        UserDetail.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_userdetail(sender, instance, **kwargs):
+    instance.userdetail.save()

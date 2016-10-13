@@ -6,10 +6,8 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
-from django.views.generic import ListView
 from gerencex.core.forms import AbsencesForm
-from gerencex.core.models import Timing, Restday, Absences
-from gerencex.core import parameters
+from gerencex.core.models import Timing, Absences
 
 
 @login_required
@@ -53,11 +51,13 @@ def timing(request, pk):
     ticket = get_object_or_404(Timing, pk=pk)
 
     if ticket.checkin:
+        checkin_tolerance = request.user.userdetail.office.checkin_tolerance
         context['register'] = 'entrada'
-        context['time'] = ticket.date_time + parameters.CHECKIN_TOLERANCE
+        context['time'] = ticket.date_time - checkin_tolerance
     else:
+        checkout_tolerance = request.user.userdetail.office.checkout_tolerance
         context['register'] = 'saída'
-        context['time'] = ticket.date_time + parameters.CHECKOUT_TOLERANCE
+        context['time'] = ticket.date_time + checkout_tolerance
     return render(request, 'timing.html', context)
 
 
@@ -150,104 +150,3 @@ def rules(request):
 
 def activate_timezone():
     timezone.activate(pytz.timezone('America/Sao_Paulo'))
-
-
-def calculate_credit(user, date):
-    """
-    Returns the credit for the pair user + date, as a timedelta
-
-    Credit is calculated by summing up:
-     * the credit from Timing table;
-     * the credit from Absences table
-    """
-
-    tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
-               for x in Timing.objects.filter(user=user,
-                                              date_time__date=date).all()
-               ]
-
-    # If the last Timing recorded is a checkin, it must not be considered in the credit calculus
-    if tickets[-1]['checkin']:
-        del tickets[-1]
-
-    # Calculates the credit from the Timing table
-    credit = timedelta(seconds=0)
-    tolerance = parameters.CHECKOUT_TOLERANCE - parameters.CHECKIN_TOLERANCE
-
-    if parameters.MAX_CHECKOUT_TIME['used'] or parameters.MIN_CHECKIN_TIME['used']:
-        tickets = adjusted_tickets(tickets)
-
-    if len(tickets) != 0:
-        for ticket in tickets:
-            if not ticket['checkin']:
-                chkin = tickets.index(ticket) - 1
-                credit += ticket['date_time'] - tickets[chkin]['date_time'] + tolerance
-
-    # Sums up the credit from Absences table
-    # There's only one user + date peer, due to the unique_together clause
-
-    absences = [a for a in Absences.objects.filter(user=user, date=date)]
-    credit_sum = timedelta(seconds=0)
-    if absences:
-        credit_int = absences[0].credit
-        credit_sum = timedelta(seconds=credit_int)
-    credit += credit_sum
-
-    max_credit = parameters.MAX_DAILY_CREDIT
-
-    if max_credit['used'] and credit > max_credit['value']:
-        credit = max_credit['value']
-
-    return credit
-
-
-def calculate_debit(user, date):
-    """
-    Restday:        debit = restday.work_hours
-    Absence day:    debit = REGULAR_WORK_HOURS + absence.debit
-    Normal day:     debit = REGULAR_WORK_HOURS
-
-    Debit is returned as a timedelta
-    """
-    restday = Restday.objects.filter(date=date)
-    absence = Absences.objects.filter(user=user, date=date)
-
-    # If date is a restday, let's consider the work hours specified for this date
-    if restday.count():
-        return restday[0].work_hours
-    elif absence.count():
-        return parameters.REGULAR_WORK_HOURS - timedelta(seconds=absence[0].debit)
-    else:
-        return parameters.REGULAR_WORK_HOURS
-
-
-def adjusted_tickets(tickets):
-    """
-    Forces the checkin time to be greater than or equal to the minimum allowed.
-    Forces the checkout time to be lesser than or equal to the maximum allowed.
-    """
-    utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
-    # tz = pytz.timezone('America/Sao_Paulo')
-    new_tickets = []
-
-    for ticket in tickets:
-        ticket['date_time'] = ticket['date_time'] + utc_offset
-        # ticket['date_time'] = ticket['date_time'].astimezone(tz).replace(tzinfo=None)
-        new_ticket = ticket
-
-        if ticket['checkin'] and parameters.MIN_CHECKIN_TIME['used']:
-            if ticket['date_time'].time() < parameters.MIN_CHECKIN_TIME['value']:
-                hour = parameters.MIN_CHECKIN_TIME['value'].hour
-                minute = parameters.MIN_CHECKIN_TIME['value'].minute
-                new_ticket['date_time'] = ticket['date_time'].replace(
-                    hour=hour, minute=minute)
-
-        elif (not ticket['checkin']) and parameters.MAX_CHECKOUT_TIME['used']:
-            if ticket['date_time'].time() > parameters.MAX_CHECKOUT_TIME['value']:
-                hour = parameters.MAX_CHECKOUT_TIME['value'].hour
-                minute = parameters.MAX_CHECKOUT_TIME['value'].minute
-                new_ticket['date_time'] = ticket['date_time'].replace(
-                    hour=hour, minute=minute)
-        new_tickets.append(new_ticket)
-
-    return new_tickets

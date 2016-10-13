@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance, Absences
+from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance, Absences, Office
 
 
 # Define an inline admin descriptor for Employee model
@@ -43,6 +43,11 @@ class AbsencesAdmin(admin.ModelAdmin):
     list_filter = ('user',)
     date_hierarchy = 'date'
 
+
+class OfficeAdmin(admin.ModelAdmin):
+    list_display = ('initials', 'name', 'active')
+
+
 # Re-register UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
@@ -54,3 +59,4 @@ admin.site.register(Timing, TimingAdmin)
 admin.site.register(Restday, RestdayAdmin)
 admin.site.register(HoursBalance, HoursBalanceAdmin)
 admin.site.register(Absences, AbsencesAdmin)
+admin.site.register(Office, OfficeAdmin)

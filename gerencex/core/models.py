@@ -3,20 +3,24 @@ from datetime import timedelta, time
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from gerencex.core import parameters
+from gerencex.core import time_calculations
 from gerencex.core.validators import validate_date
 
 
 # Create your models here.
 
 class UserDetail(models.Model):
+    """
+    The default values are set at User's creation or saving (via signals). See 'signals.py'
+    """
     user = models.OneToOneField(User,
                                 on_delete=models.CASCADE,
                                 primary_key=True
                                 )
     atwork = models.BooleanField(default=False)
     office = models.ForeignKey('Office',
-                               models.SET_NULL,
+                               models.SET_DEFAULT,
+                               default=1,
                                null=True,
                                blank=True,
                                related_name='users'
@@ -51,7 +55,6 @@ class Timing(models.Model):
 
 
 class Restday(models.Model):
-
     date = models.DateField('data',
                             validators=[validate_date],
                             help_text='Formato DD/MM/AAAA',
@@ -69,6 +72,9 @@ class Restday(models.Model):
 
 
 class HoursBalance(models.Model):
+    """
+    The balance is always calculated via signals. See 'signals.py'
+    """
 
     date = models.DateField('data',)
     user = models.ForeignKey(User,
@@ -106,7 +112,6 @@ class HoursBalance(models.Model):
 
 
 class Absences(models.Model):
-
     CURSO = 'CR'
     CEDIDO = 'CD'
     INSPECAO = 'IN'
@@ -156,7 +161,7 @@ class Office(models.Model):
     'TCU' stands for Tribunal de Contas da União, the brazilian federal court for account
     settlement, similar to U.S. Government Accountability Office (U.S. GAO)
     """
-    nome = models.CharField('nome', max_length=100)
+    name = models.CharField('nome', max_length=100)
     initials = models.CharField('sigla', max_length=15)
     active = models.BooleanField('unidade ativa', default=True)
     regular_work_hours = models.DurationField('jornada diária',
@@ -178,9 +183,14 @@ class Office(models.Model):
     max_checkout_time_value = models.TimeField('horário máximo para saída',
                                                default=time(20, 0, 0))              # TCU: 20h00
     checkin_tolerance = models.DurationField('tolerância para entrada',
-                                             default=timedelta(minutes=-10))
+                                             default=timedelta(minutes=10))
     checkout_tolerance = models.DurationField('tolerância para saída',
                                               default=timedelta(minutes=5))
+
+    class Meta:
+        verbose_name = 'Lotação'
+        verbose_name_plural = 'Lotações'
+        ordering = ['initials']
 
     def __str__(self):
         return '{}'.format(self.initials)

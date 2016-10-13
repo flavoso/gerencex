@@ -5,10 +5,9 @@ from django.contrib.auth.models import User
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
-from gerencex.core import parameters
 from gerencex.core.forms import RestdayForm
-from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance, Absences
-from gerencex.core.views import calculate_credit, calculate_debit
+from gerencex.core.models import UserDetail, Timing, Restday, HoursBalance, Absences, Office
+from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 
 class LogIn(TestCase):
@@ -76,21 +75,41 @@ class LogOut(TestCase):
 class UserDetailTest(TestCase):
 
     def setUp(self):
+        Office.objects.create(name='Nenhuma lotação',
+                              initials='NL')
         User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user = User.objects.get(username='testuser')
-        UserDetail.objects.create(user=self.user)
+        # UserDetail.objects.create(user=self.user)
 
-    def test_at_work(self):
-        """User must have an 'at work' boolean, whose default is False"""
-        atwork = UserDetail.objects.get(user=self.user).atwork
+    def test_userdetail_create(self):
+        """
+        User must have default values for 'atwork' (False) and office ('Nenhuma lotação')
+        """
+        atwork = self.user.userdetail.atwork
+        office = self.user.userdetail.office.initials
         self.assertFalse(atwork)
+        self.assertEqual('NL', office)
+
+    def test_userdetail_save(self):
+        """
+        User must have default values for 'atwork' (False) and office ('Nenhuma lotação')
+        """
+        user2 = User(username='testuser2',
+                     email='test2@user.com',
+                     password='senha321')
+        user2.save()
+        atwork = user2.userdetail.atwork
+        office = user2.userdetail.office.initials
+        self.assertFalse(atwork)
+        self.assertEqual('NL', office)
 
 
 class TimingViewTest(TestCase):
 
     def setUp(self):
+        Office.objects.create(name='Nenhuma lotação', initials='NL')
         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
-        self.userdetail = UserDetail.objects.create(user=self.user)
+        # self.userdetail = UserDetail.objects.create(user=self.user)
         self.client.login(username='testuser', password='senha123')
 
     def test_get(self):
@@ -101,8 +120,8 @@ class TimingViewTest(TestCase):
     def test_valid_checkin(self):
         """Valid checkin: (a) redirects to 'timing'; b) changes userdetail.atwork to True; (c)
         generates a checkin ticket; (d) the ticket is created by the user"""
-        self.userdetail.atwork = False
-        self.userdetail.save()
+        self.user.userdetail.atwork = False
+        self.user.save()
         self.response = self.client.post(r('timing_new'))
         self.assertRedirects(self.response, r('timing', 1))
 
@@ -124,8 +143,8 @@ class TimingViewTest(TestCase):
         date_time = timezone.make_aware(d)
         Timing.objects.create(user=self.user, date_time=date_time, checkin=True,
                               created_by=self.user)
-        self.userdetail.atwork = True
-        self.userdetail.save()
+        self.user.userdetail.atwork = True
+        self.user.save()
         self.response = self.client.post(r('timing_new'))
         self.assertRedirects(self.response, r('timing', 2))
 
@@ -147,8 +166,8 @@ class TimingViewTest(TestCase):
         date_time = timezone.make_aware(d)
         Timing.objects.create(user=self.user, date_time=date_time, checkin=True,
                               created_by=self.user)
-        self.userdetail.atwork = True
-        self.userdetail.save()
+        self.user.userdetail.atwork = True
+        self.user.save()
         self.response = self.client.post(r('timing_new'))
         self.assertRedirects(self.response, r('timing_fail'))
 
@@ -204,7 +223,6 @@ class TimingModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
-        cls.userdetail = UserDetail.objects.create(user=cls.user)
 
     def setUp(self):
         self.client.login(username='testuser', password='senha123')
@@ -296,7 +314,6 @@ class HoursBalanceModelTest(TestCase):
         r1.credit = datetime.timedelta(hours=7).seconds
         r1.save()
         r2 = HoursBalance.objects.get(pk=2)
-        # r2.save()
         self.assertEqual(r2.balance, int(datetime.timedelta(hours=-1).total_seconds()))
 
 
@@ -307,7 +324,7 @@ class AbsencesModelTest(TestCase):
         cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
 
     def test_create(self):
-        a = Absences.objects.create(
+        Absences.objects.create(
             date=datetime.date(2016, 9, 5),
             user=self.user,
             cause='curso',
@@ -318,33 +335,31 @@ class AbsencesModelTest(TestCase):
         self.assertTrue(Absences.objects.exists())
 
 
-class CreditCalculationTest(TestCase):
+class CalculationsTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        Office.objects.create(name='Nenhuma lotação', initials='NL')
+        User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        cls.user = User.objects.get(username='testuser')
 
     def test_credit(self):
         activate_timezone()
-        t1 = Timing.objects.create(
-                 user=self.user,
-                 date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 7, 0, 0, 0)),
-                 checkin=True
-            )
-        t2 = Timing.objects.create(
-                 user=self.user,
-                 date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 21, 0, 0, 0)),
-                 checkin=False
-            )
-        # a1 = Absences.objects.create(
-        #          user=self.user,
-        #          date=datetime.date(2016, 10, 3),
-        #          credit=datetime.timedelta(hours=4).seconds,
-        #          debit=0
-        #      )
+        Timing.objects.create(
+             user=self.user,
+             date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 7, 0, 0, 0)),
+             checkin=True
+        )
+        Timing.objects.create(
+             user=self.user,
+             date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 21, 0, 0, 0)),
+             checkin=False
+        )
 
-        credit = calculate_credit(user=self.user, date=datetime.date(2016, 10, 3))
-        tolerance = parameters.CHECKOUT_TOLERANCE - parameters.CHECKIN_TOLERANCE
+        credit = calculate_credit(self.user, datetime.date(2016, 10, 3))
+        checkout_tolerance = self.user.userdetail.office.checkout_tolerance
+        checkin_tolerance = self.user.userdetail.office.checkin_tolerance
+        tolerance = checkout_tolerance + checkin_tolerance
 
         self.assertEqual(datetime.timedelta(hours=14) + tolerance, credit)
 
@@ -353,8 +368,8 @@ class CreditCalculationTest(TestCase):
         Normal day:     debit = REGULAR_WORK_HOURS
         """
 
-        debit = calculate_debit(user=self.user, date=datetime.date(2016, 10, 10))
-        self.assertEqual(parameters.REGULAR_WORK_HOURS, debit)
+        debit = calculate_debit(self.user, datetime.date(2016, 10, 10))
+        self.assertEqual(self.user.userdetail.office.regular_work_hours, debit)
 
     def test_debit_restday(self):
         """
@@ -365,7 +380,7 @@ class CreditCalculationTest(TestCase):
             note='Feriado N. Sª Aparecida',
             work_hours=datetime.timedelta(hours=0)
         )
-        debit = calculate_debit(user=self.user, date=datetime.date(2016, 10, 12))
+        debit = calculate_debit(self.user, datetime.date(2016, 10, 12))
         self.assertEqual(datetime.timedelta(hours=0), debit)
 
     def test_debit_absence_day(self):
@@ -378,9 +393,9 @@ class CreditCalculationTest(TestCase):
             user=self.user,
             cause='LM',
             credit=0,
-            debit=-25200
+            debit=25200
         )
-        debit = calculate_debit(user=self.user, date=datetime.date(2016, 10, 10))
+        debit = calculate_debit(self.user, datetime.date(2016, 10, 10))
         self.assertEqual(datetime.timedelta(hours=0), debit)
 
 
