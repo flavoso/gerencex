@@ -25,6 +25,8 @@ class UserDetail(models.Model):
                                blank=True,
                                related_name='users'
                                )
+    opening_hours_balance = models.IntegerField('saldo inicial',
+                                                default=0)
 
     def __str__(self):
         return self.user.username
@@ -186,6 +188,9 @@ class Office(models.Model):
                                              default=timedelta(minutes=10))
     checkout_tolerance = models.DurationField('tolerância para saída',
                                               default=timedelta(minutes=5))
+    hours_control_start_date = models.DateField('data de início do banco de horas',
+                                                null=True,
+                                                blank=True)
 
     class Meta:
         verbose_name = 'Lotação'

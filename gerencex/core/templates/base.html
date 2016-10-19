@@ -33,7 +33,7 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                         Banco de horas <span class="caret"></span></a>
                         <ul class="dropdown-menu">
-                            <li><a href="{% url 'my_hours_bank' username=user.username %}">Meu banco de horas</a></li>
+                            <li><a href="{% url 'my_hours_bank' username=user.username year=year month=month %}">Meu banco de horas</a></li>
                             <li><a href="{% url 'absences' username=user.username %}">Meus afastamentos</a></li>
                             <li><a href="{% url 'forgotten_checkouts' %}">Minhas saídas não registradas</a></li>
                             <li role="separator" class="divider"></li>
