@@ -1,17 +1,33 @@
-{% extends 'base.html' %}
+{% load static %}
 
-{% block title %}500. Erro interno inesperado{% endblock title %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerencex: Erro interno inesperado</title>
 
-{% block content %}
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Customizações do CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+</head>
+
+<body>
 <section class="container">
-    <div class="row">
-        <h1>500</h1>
-        <h2>Erro interno inesperado</h2>
-        <p>Desculpe. Ocorreu um erro inesperado.</p>
-        <p>Nossa equipe já foi notificada do problema.<br>
-           Caso necessário entre em contato com
-           <a href="mailto:suporte@eventex.com.br?subject=500 Erro interno inesperado">suporte@gerencex.com.br</a>
-        </p>
-    </div>
+<div class="row">
+    <h1>500</h1>
+    <h2>Erro interno inesperado</h2>
+    <p>Desculpe. Ocorreu um erro inesperado.</p>
+    <p>Nossa equipe já foi notificada do problema.<br>
+       Caso necessário entre em contato com o administrador
+    </p>
+</div>
 </section>
-{% endblock content %}
+</body>
+</html>

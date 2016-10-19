@@ -178,6 +178,7 @@ class TimingViewTest(TestCase):
 class ForgottenCheckoutsViewTest(TestCase):
 
     def setUp(self):
+        Office.objects.create(name='Nenhuma lotação', initials='NL')
         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user.first_name = 'ze mane'
         self.user.save()
@@ -230,7 +231,8 @@ class TimingModelTest(TestCase):
     def test_create(self):
         t = Timing.objects.create(
             user=self.user,
-            date_time='2016-08-02 11:45:01.017787+00:00') # 'checkin' defaults to 'False'
+            date_time=timezone.make_aware(datetime.datetime(2016, 10, 19, 7, 0, 0, 0))
+        )                                                   # 'checkin' defaults to 'False'
         self.assertTrue(Timing.objects.exists())
 
         default_values = (t.checkin, t.created_by)
@@ -335,7 +337,7 @@ class AbsencesModelTest(TestCase):
         self.assertTrue(Absences.objects.exists())
 
 
-class CalculationsTest(TestCase):
+class TimeCalculationsTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -399,5 +401,71 @@ class CalculationsTest(TestCase):
         self.assertEqual(datetime.timedelta(hours=0), debit)
 
 
+class CreditTriggerTest(TestCase):
+    """
+    The user credit is always registered at HourBalance via signal, when a checkout occurs.
+    See the 'credit_calculation' function, at signals.py
+    """
+    @classmethod
+    def setUpTestData(cls):
+        Office.objects.create(name='Nenhuma lotação', initials='NL')
+        User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        cls.user = User.objects.get(username='testuser')
+
+    def test_credit_triggers(self):
+        activate_timezone()
+        t1 = Timing.objects.create(
+             user=self.user,
+             date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 12, 0, 0, 0)),
+             checkin=True
+        )
+
+        """Test checkout creation"""
+        t2 = Timing.objects.create(
+             user=self.user,
+             date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 13, 0, 0, 0)),
+             checkin=False
+        )
+        date = datetime.date(2016, 10, 3)
+        balance_line = HoursBalance.objects.filter(date=date, user=self.user)[0]
+        checkout_tolerance = self.user.userdetail.office.checkout_tolerance
+        checkin_tolerance = self.user.userdetail.office.checkin_tolerance
+        tolerance = checkout_tolerance + checkin_tolerance
+        reference = datetime.timedelta(hours=1).seconds + tolerance.seconds
+        credit = balance_line.credit
+
+        self.assertEqual(reference, credit)
+
+        """Test checkout change"""
+        t2.date_time += datetime.timedelta(hours=1)
+        t2.save()
+        modified_reference1 = datetime.timedelta(hours=2).seconds + tolerance.seconds
+        modified_balance_line1 = HoursBalance.objects.filter(date=date, user=self.user)[0]
+        modified_credit1 = modified_balance_line1.credit
+
+        self.assertEqual(modified_reference1, modified_credit1)
+
+        """Test checkin change"""
+        t1.date_time += datetime.timedelta(hours=1)
+        t1.save()
+        modified_reference2 = datetime.timedelta(hours=1).seconds + tolerance.seconds
+        modified_balance_line2 = HoursBalance.objects.filter(date=date, user=self.user)[0]
+        modified_credit2 = modified_balance_line2.credit
+
+        self.assertEqual(modified_reference2, modified_credit2)
+
+        """Test new checkin (in this case, we must not have a corresponding line at HoursBalance"""
+        t3 = Timing.objects.create(
+             user=self.user,
+             date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 14, 0, 0, 0)),
+             checkin=True
+        )
+        modified_reference3 = datetime.timedelta(hours=1).seconds + tolerance.seconds
+        modified_balance_line3 = HoursBalance.objects.filter(date=date, user=self.user)[0]
+        modified_credit3 = modified_balance_line3.credit
+
+        self.assertEqual(modified_reference3, modified_credit3)
+
+
 def activate_timezone():
-        return timezone.activate(pytz.timezone('America/Sao_Paulo'))
+    return timezone.activate(pytz.timezone('America/Sao_Paulo'))

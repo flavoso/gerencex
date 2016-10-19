@@ -75,7 +75,7 @@ class Restday(models.Model):
 
 class HoursBalance(models.Model):
     """
-    The balance is always calculated via signals. See 'signals.py'
+    The user balance is always calculated via signals. See 'signals.py'
     """
 
     date = models.DateField('data',)

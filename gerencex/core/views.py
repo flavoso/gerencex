@@ -13,9 +13,7 @@ from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 @login_required
 def home(request):
-    year = timezone.now().year
-    month = timezone.now().month
-    return render(request, 'index.html', context={'year': year, 'month': month})
+    return render(request, 'index.html')
 
 
 @login_required
