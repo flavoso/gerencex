@@ -103,7 +103,7 @@ class HoursBalance(models.Model):
     def time_balance(self):
         if self.balance < 0:
             return '-{}'.format(timedelta(seconds=abs(self.balance)))
-        return str(timedelta(self.balance))
+        return str(timedelta(seconds=self.balance))
 
     time_credit.short_description = 'crédito'
     time_debit.short_description = 'débito'
@@ -167,7 +167,7 @@ class Office(models.Model):
     initials = models.CharField('sigla', max_length=15)
     active = models.BooleanField('unidade ativa', default=True)
     regular_work_hours = models.DurationField('jornada diária',
-                                              default=timedelta(hours=7))           # TCU: 10 hours
+                                              default=timedelta(hours=7))           # TCU: 7 hours
     max_daily_credit = models.BooleanField('restrição de jornada diária máxima',
                                                 default=False)
     max_daily_credit_value = models.DurationField('restrição de valor da máxima jornada diária',
@@ -191,6 +191,9 @@ class Office(models.Model):
     hours_control_start_date = models.DateField('data de início do banco de horas',
                                                 null=True,
                                                 blank=True)
+    last_balance_date = models.DateField('data do último balanço',
+                                         null=True,
+                                         blank=True)
 
     class Meta:
         verbose_name = 'Lotação'

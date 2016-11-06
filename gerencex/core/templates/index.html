@@ -5,12 +5,14 @@
 <section class="container-fluid">
 <div class="row">
     <figure class="col-sm-4">
-        <img src="{% static 'img/banco-de-horas.jpg' %}" class="img-rounded">
-        <h2>Banco de horas</h2>
+        <a href="{% url 'hours_bank' %}">
+            <img src="{% static 'img/banco-de-horas.jpg' %}" class="img-rounded"></a>
+        <h2><a href="{% url 'hours_bank' %}">Banco de horas</a></h2>
     </figure>
     <figure class="col-sm-4">
-        <img src="{% static 'img/afastamento.jpg' %}" class="img-rounded">
-        <h2>Afastamentos</h2>
+        <a href="{% url 'absences' user.username %}">
+            <img src="{% static 'img/afastamento.jpg' %}" class="img-rounded"></a>
+        <h2><a href="{% url 'absences' user.username %}">Afastamentos</a></h2>
     </figure>
     <figure class="col-sm-4">
         <img src="{% static 'img/produtividade.jpg' %}" class="img-rounded">

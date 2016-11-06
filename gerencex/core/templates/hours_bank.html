@@ -1,31 +1,42 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% now "Y" as current_year %}
+{% now "m" as current_month %}
+
 {% block content %}
 
-<section class="container">
-<div class="row">
-    <h1>Banco de horas da Divisão</h1>
-</div>
-<div class="row">
-    <table class="table col-sm-4">
-        <thead>
-            <tr>
-                <th>Auditor</th><th>Saldo atual</th>
-            </tr>
-        </thead>
-        <tbody class=".table-striped">
-            <tr>
-                <td>Villarinho</td><td class="debit">3 hora</td>
-            </tr>
-            <tr>
-                <td>Lúcia</td><td class="debit">1 horas</td>
-            </tr>
-            <tr>
-                <td>Barry</td><td class="credit">1 hora</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-1">
+            <h2>{{ office.name }}</h2>
+            <h3>Saldos de horas em {% now "SHORT_DATE_FORMAT" %}</h3>
+            <table class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>Servidor</th>
+                    <th class="text-center">Saldo de horas</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for l in lines|dictsort:"first_name" %}
+                        <tr>
+                        <td><a href="{% url 'my_hours_bank' username=l.username year=current_year month=current_month %}">
+                            {{ l.first_name|title }} {{ l.last_name|title }}</a></td>
+                        <td class="text-center">
+                            {% if '-' in l.balance %}
+                                <spam class="debit">{{ l.balance }}</spam>
+                            {% else %}
+                                <spam class="credit">{{ l.balance }}</spam>
+                            {% endif %}
+                        </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
 
 {% endblock %}

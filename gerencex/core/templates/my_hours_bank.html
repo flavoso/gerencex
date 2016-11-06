@@ -3,59 +3,56 @@
 
 {% block content %}
 
-<section class="container">
-<div class="row">
-    <h1>Banco de horas de {{ first_name }} {{ last_name }}</h1>
-</div>
-<div class="row">
-    <h2>Saldo de horas do mês anterior: <span class="credit">crédito de 2 horas</span></h2>
-</div>
-<div class="row">
-    <h2>Movimento no mês</h2>
-</div>
-<div class="row">
-    <table class="table table-striped">
-        <thead>
+<section class="container-fluid">
+    <div class="row">
+    <div class="col-sm-10 col-sm-offset-1">
+        <h2>{{ first_name }} {{ last_name }}</h2>
+        <h3>Extrato de horas: {{ date|date:"F" }} de {{ date|date:"Y" }}</h3>
+
+        <table class="table table-bordered table-hover table-striped">
+            <thead>
             <tr>
-                <th>Data</th>
-                <th>Descrição (opcional)</th>
-                <th>Débito</th>
-                <th>Crédito</th>
-                <th>Saldo</th>
+                <th class="text-center">Data</th>
+                <th class="text-center">Crédito</th>
+                <th class="text-center">Débito</th>
+                <th class="text-center">Saldo</th>
+                <th class="text-center">Observação</th>
             </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td colspan="4">Saldo inicial</td>
-                <td class="credit">+2 horas</td>
-            </tr>
-            <tr>
-                <td>04/03/2016</td>
-                <td>Peguei filho na escola</td>
-                <td class="debit">-1 hora</td>
-                <td>-</td>
-                <td class="credit">+1 hora</td>
-            </tr>
-            <tr>
-                <td>05/03/2016</td>
-                <td>Consulta médica</td>
-                <td class="debit">-3 horas</td>
-                <td>-</td>
-                <td class="debit">-2 horas</td>
-            </tr>
-            <tr>
-                <td>06/03/2016</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="credit">+1 hora</td>
-                <td class="debit">-1 hora</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-</div class="row">
-    <h2>Saldo atual: <span class="debit">débito de 1 hora</span></h2>
+            </thead>
+            <tbody class="text-center">
+                {% for l in lines %}
+                    <tr class="text-center">
+                    <td>{{ l.date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ l.credit }}</td>
+                    <td>{{ l.debit }}</td>
+                    <td class="text-center">
+                        {% if '-' in l.balance %}
+                            <spam class="debit">{{ l.balance }}</spam>
+                        {% else %}
+                            <spam class="credit">{{ l.balance }}</spam>
+                        {% endif %}
+                    </td>
+                    <td>{{ l.comment }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    <div class="row">
+        <div class="col-sm-10 col-sm-offset-1">
+            {% if previous %}
+            <a href="{% url 'my_hours_bank' username=username year=previous.year month=previous.month %}"
+               class="btn btn-default" role="button">Mês anterior</a>
+            {% endif %}
+        </div>
+        <div class="col-sm-10 col-sm-offset-10">
+            {% if next %}
+            <a href="{% url 'my_hours_bank' username=username year=next.year month=next.month %}"
+               class="btn btn-default" role="button">Mês seguinte</a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 </section>
+
 
 {% endblock %}

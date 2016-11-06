@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.utils import timezone
 from gerencex.core.models import Restday, Absences
 
 class RestdayForm(forms.ModelForm):
@@ -37,3 +38,16 @@ class AbsencesForm(forms.Form):
                 self.add_error('end', forms.ValidationError(
                     'Data de término menor que a de início', code='termino')
                     )
+
+
+class GenerateBalanceForm(forms.Form):
+    begin = forms.DateField(label='Data inicial',
+                            required=False,
+                            widget=forms.TextInput(attrs={'class':'datepicker'}))
+
+    def clean(self):
+        super(GenerateBalanceForm, self).clean()
+        begin = self.cleaned_data.get("begin")
+
+        if begin and begin > timezone.now().date():
+            self.add_error('end', forms.ValidationError('Data inválida', code='inicio'))

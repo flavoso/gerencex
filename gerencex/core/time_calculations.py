@@ -13,9 +13,11 @@ def calculate_credit(u, date):
 
     from django.contrib.auth.models import User
     user = User.objects.get(pk=u.pk)
+    opening_balance = user.userdetail.opening_hours_balance
 
     """Get the parameters, defined for the user's office"""
 
+    start_control_date = user.userdetail.office.hours_control_start_date
     checkin_tolerance = user.userdetail.office.checkin_tolerance
     checkout_tolerance = user.userdetail.office.checkout_tolerance
     max_daily_credit = {'used': user.userdetail.office.max_daily_credit,
@@ -29,16 +31,16 @@ def calculate_credit(u, date):
     tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
                for x in Timing.objects.filter(user=user,
                                               date_time__date=date).all()
-               ]
+              ]
 
-    """
-    If the last Timing recorded is a checkin, it must not be considered in the credit calculation
-    """
-    if tickets[-1]['checkin']:
-        del tickets[-1]
+    # Takes the credit from opening_hours_balance into account, if any
+
+    credit = datetime.timedelta(seconds=0)
+
+    if date == start_control_date and opening_balance > 0:
+        credit += datetime.timedelta(seconds=opening_balance)
 
     # Calculates the credit from the Timing table
-    credit = datetime.timedelta(seconds=0)
 
     tolerance = checkout_tolerance + checkin_tolerance
 
@@ -46,15 +48,19 @@ def calculate_credit(u, date):
         tickets = adjusted_tickets(tickets, min_checkin_time, max_checkout_time)
 
     if len(tickets) != 0:
+
+        # If the last Timing recorded is a checkin, it must not be considered in the
+        # credit calculation
+        if tickets[-1]['checkin']:
+            del tickets[-1]
+
         for ticket in tickets:
             if not ticket['checkin']:
                 chkin = tickets.index(ticket) - 1
                 credit += ticket['date_time'] - tickets[chkin]['date_time'] + tolerance
 
-    """
-    Sums up the credit from Absences table
-    There's only one user + date peer, due to the unique_together clause
-    """
+    # Sums up the credit from Absences table
+    # There's only one user + date peer, due to the unique_together clause
 
     from gerencex.core.models import Absences
 
@@ -73,8 +79,9 @@ def calculate_credit(u, date):
 
 def calculate_debit(u, date):
     """
+    Weekend:        debit = 0
     Restday:        debit = restday.work_hours
-    Absence day:    debit = REGULAR_WORK_HOURS + absence.debit
+    Absence day:    debit = REGULAR_WORK_HOURS - absence.debit
     Normal day:     debit = REGULAR_WORK_HOURS
 
     Debit is returned as a timedelta
@@ -82,22 +89,48 @@ def calculate_debit(u, date):
 
     from django.contrib.auth.models import User
     user = User.objects.get(pk=u.pk)
+    opening_balance = user.userdetail.opening_hours_balance  # integer
 
-    """Get the parameters, defined for user's office"""
-    regular_work_hours = user.userdetail.office.regular_work_hours
+    # Get the parameters, defined for user's office
+    start_control_date = user.userdetail.office.hours_control_start_date
+    regular_work_hours = user.userdetail.office.regular_work_hours  # timedelta
 
     from gerencex.core.models import Restday, Absences
 
     restday = Restday.objects.filter(date=date)
     absence = Absences.objects.filter(user=user, date=date)
 
-    """If date is a restday, let's consider the work hours specified for this date"""
-    if restday.count():
-        return restday[0].work_hours
-    elif absence.count():
-        return regular_work_hours - datetime.timedelta(seconds=absence[0].debit)
+    extra_hours = datetime.timedelta(seconds=0)
+
+    # If this is the date when control begins, gets the user's initial debit, if exists
+
+    if date == start_control_date and opening_balance < 0:
+        extra_hours += datetime.timedelta(seconds=-opening_balance)
+
+    # If the user was absent at this day, takes the debit into account. This happens,
+    # for example, the user needs to absent earlier, due to medical reasons
+
+    if absence.count():
+        extra_hours -= datetime.timedelta(seconds=absence[0].debit)
+
+    # If date is in a weekend, work hours = 0.
+    # If this is a rest day, takes the work hours planned for the day (sometimes,
+    # like in 24th december, it's used to work from 08h00 up to midday: 4 work hours.
+    # Otherwise, takes the regular daily work hours.
+
+    is_weekend = bool(date.weekday() in (5, 6))
+    is_restday = bool(restday.count())
+
+    if is_weekend:
+        work_hours = datetime.timedelta(seconds=0)
+    elif is_restday:
+        work_hours = restday[0].work_hours
     else:
-        return regular_work_hours
+        work_hours = regular_work_hours
+
+    debit = work_hours + extra_hours
+
+    return debit
 
 
 def adjusted_tickets(tickets, min_checkin_time, max_checkout_time):

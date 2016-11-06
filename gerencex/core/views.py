@@ -6,8 +6,8 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
-from gerencex.core.forms import AbsencesForm
-from gerencex.core.models import Timing, Absences, Restday, HoursBalance
+from gerencex.core.forms import AbsencesForm, GenerateBalanceForm
+from gerencex.core.models import Timing, Absences, Restday, HoursBalance, Office
 from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 
@@ -93,12 +93,11 @@ def forgotten_checkouts(request):
 
 @login_required
 def absence_new(request):
-
     if request.method == 'POST':
         form = AbsencesForm(request.POST)
         if form.is_valid():
-            credit = form.cleaned_data['credit'].seconds
-            debit = form.cleaned_data['debit'].seconds
+            credit = form.cleaned_data['credit'].total_seconds()
+            debit = form.cleaned_data['debit'].total_seconds()
             date = form.cleaned_data['begin']
             while date <= form.cleaned_data['end']:
                 absence = Absences(date=date,
@@ -134,84 +133,252 @@ def absences(request, username):
 
 @login_required
 def hours_bank(request):
-    return render(request, 'hours_bank.html')
+    """
+    Shows the balance of hours of office workers
+    """
+    office = request.user.userdetail.office
+    users = [u.user for u in office.users.all()]
+    date_ = timezone.now().date()
+    expected_balance_date = date_ - timedelta(days=1)
+
+    # Updates HoursBalance, if needed
+    if office.last_balance_date < expected_balance_date:
+        for d in dates(office.last_balance_date, date_):
+            for user in users:
+                UserBalance(user, year=d.year, month=d.month).create_or_update_line(d)
+        office.last_balance_date = date_
+        office.save()
+    lines = []
+
+    for user in users:
+        lines.append(
+            {'username': user.username,
+             'first_name': user.first_name,
+             'last_name': user.last_name,
+             'balance': HoursBalance.objects.filter(user=user).last().time_balance()
+             }
+        )
+    return render(request, 'hours_bank.html',
+                  {'office': office,
+                   'lines': lines}
+                  )
 
 
 @login_required
 def my_hours_bank(request, username, year, month):
     user = User.objects.get(username=username)
-    office = user.userdetail.office
-    # initial_data = office.
-    return render(request, 'my_hours_bank.html', {'first_name': user.first_name,
-                                                  'last_name': user.last_name})
+    start_control_date = user.userdetail.office.hours_control_start_date
+    min_valid_date = date(start_control_date.year, start_control_date.month, 1)
+    balance_date = date(int(year), int(month), 1)
+
+    if balance_date < min_valid_date:
+        return render(request,
+                      'nonexistent_balance.html',
+                      {'min_valid_year': str(min_valid_date.year),
+                       'min_valid_month': str(min_valid_date.month),
+                       'min_valid_date': min_valid_date,
+                       'first_name': user.first_name,
+                       'last_name': user.last_name,
+                       'username': username}
+                      )
+
+    try_previous = balance_date - timedelta(days=1)
+    try_next = balance_date + timedelta(days=31)
+    previous_exists = HoursBalance.objects.filter(date__year=try_previous.year,
+                                                  date__month=try_previous.month,
+                                                  user=user)
+
+    next_exists = HoursBalance.objects.filter(date__year=try_next.year,
+                                              date__month=try_next.month,
+                                              user=user)
+
+    previous = None
+    next_ = None
+
+    if previous_exists:
+        previous = {'year': str(try_previous.year), 'month': str(try_previous.month)}
+
+    if next_exists:
+        next_ = {'year': str(try_next.year), 'month': str(try_next.month)}
+
+    lines = UserBalance(user, year=year, month=month).get_monthly_lines()
+
+    return render(request, 'my_hours_bank.html', {'lines': lines,
+                                                  'username': username,
+                                                  'first_name': user.first_name,
+                                                  'last_name': user.last_name,
+                                                  'date': balance_date,
+                                                  'previous': previous,
+                                                  'next': next_})
+
+
+@login_required
+def calculate_hours_bank(request):
+    """
+    (Re)Generates the hours balance for all users in the office
+    """
+    if request.method == 'POST':
+        form = GenerateBalanceForm(request.POST)
+        if form.is_valid():
+            office = request.user.userdetail.office
+            start_control = office.hours_control_start_date
+            form_begin = form.cleaned_data['begin']
+            users = [x.user for x in office.users.all()]
+            begin_date = start_control if not form_begin else form_begin
+            end_date = timezone.now().date()
+
+            for date_ in dates(begin_date, end_date):
+                for user in users:
+                    updated_values = {
+                        'credit': calculate_credit(user, date_).total_seconds(),
+                        'debit': calculate_debit(user, date_).total_seconds()
+                    }
+                    HoursBalance.objects.update_or_create(
+                        date=date_,
+                        user=user,
+                        defaults=updated_values
+                    )
+            office.last_balance_date = end_date
+            office.save()
+            return HttpResponseRedirect(r('hours_bank'))
+        else:
+            return render(request, 'calculate_bank.html', {'form': form})
+    else:
+        form = GenerateBalanceForm()
+        return render(request, 'calculate_bank.html', {'form': form})
 
 
 @login_required
 def rules(request):
-    return render(request, 'rules.html')
+    office = request.user.userdetail.office
+    params = []
+    params.append({
+        'description': Office._meta.get_field('regular_work_hours').verbose_name,
+        'active': True,
+        'value': str(office.regular_work_hours)
+        }
+    )
+    params.append({
+        'description': Office._meta.get_field('max_daily_credit').verbose_name,
+        'active': office.max_daily_credit,
+        'value': office.max_daily_credit_value
+        }
+    )
+    params.append({
+        'description': Office._meta.get_field('max_monthly_balance').verbose_name,
+        'active': office.max_monthly_balance,
+        'value': office.max_monthly_balance_value
+        }
+    )
+    params.append({
+        'description': Office._meta.get_field('min_checkin_time').verbose_name,
+        'active': office.min_checkin_time,
+        'value': office.min_checkin_time_value
+        }
+    )
+    params.append({
+        'description': Office._meta.get_field('max_checkout_time').verbose_name,
+        'active': office.max_checkout_time,
+        'value': office.max_checkout_time_value
+        }
+    )
+    params.append({
+        'description': Office._meta.get_field('checkin_tolerance').verbose_name,
+        'active': True,
+        'value': office.checkin_tolerance
+        }
+    )
+    params.append({
+        'description': Office._meta.get_field('checkout_tolerance').verbose_name,
+        'active': True,
+        'value': office.checkout_tolerance
+        }
+    )
+
+    return render(request, 'rules.html', {'params': params})
 
 
 def activate_timezone():
     timezone.activate(pytz.timezone('America/Sao_Paulo'))
 
 
-class Balance:
-    def __init__(self, user, year, month):
+def dates(date1, date2):
+    d = date1
+    while d < date2:
+        yield d
+        d += timedelta(days=1)
+
+
+def comments(user, date_):
+    restday = Restday.objects.filter(date=date_).last()
+    absence = Absences.objects.filter(date=date_, user=user).last()
+    office = user.userdetail.office
+    start_balance = bool(date_ == office.hours_control_start_date)
+    weekend = bool(date_.weekday() in (5, 6))
+
+    msg = ''
+    if weekend:
+        msg += 'Fim de semana. '
+
+    if restday:
+        msg += restday.note + '. '
+
+    if absence:
+        msg += absence.get_cause_display() + '. '
+
+    if start_balance:
+        msg += 'Abertura da conta de horas. '
+
+    return msg
+
+
+class UserBalance:
+    def __init__(self, user, **kwargs):
         self.user = user
-        self.year = int(year)
-        self.month = int(month)
-
-    def first_day(self):
-        office = self.user.userdetail.office
-        start_date = office.hours_control_start_date
-
-        if start_date < date(self.year, self.month, 1):
-            return {'date': date(self.year, self.month, 1),
-                    'first_balance': False}
-        else:
-            return {'date': start_date,
-                    'first_balance': True}
-
-    def last_work_day(self):
-        last_month_day = date(self.year, self.month + 1, 1) - timedelta(days=1)
-        last_work_day = last_month_day
-        weekend = (5, 6)
-        restdays = [d.date for d in Restday.objects.filter(date__year = 2016, date__month = 10)]
-        while last_work_day.weekday() in weekend or last_work_day.weekday() in restdays:
-            last_work_day -= timedelta(days=1)
-        return last_work_day
-
-    def lines(self):
-        last_month_day = date(self.year, self.month + 1, 1) - timedelta(days=1)
-        dates = [self.first_day()[date]]
-        d = self.first_day()[date]
-        while d.day < last_month_day.day:
-            d += timedelta(days=1)
-            dates.append(d)
-
+        self.office = user.userdetail.office
+        self.year = int(kwargs['year'])
+        self.month = int(kwargs['month'])
+        self.last_month_day = date(self.year, self.month + 1, 1)
+        self.last_day = min(timezone.now().date(), self.last_month_day)
+        self.start_date = user.userdetail.office.hours_control_start_date
+        first_month_day = date(self.year, self.month, 1)
+        self.first_day = max(first_month_day, self.start_date)
         balance = [l for l in HoursBalance.objects.filter(date__year=self.year,
-                                                        date__month=self.month,
-                                                        user=self.user)]
-        balance_dates = [d.date for d in balance]
+                                                          date__month=self.month,
+                                                          user=self.user)]
+        self.balance_dates = [d.date for d in balance]
+
+    def get_monthly_lines(self):
         lines = []
-        for date_ in dates:
-            if date_ in balance_dates:
-                idx = balance_dates.index(date_)
-                credit = balance[idx].credit
-                debit = balance[idx].debit
-                balance = balance[idx].debit
-            else:
-                credit = calculate_credit(self.user, date_).seconds
-                debit = calculate_debit(self.user, date_).seconds
-                HoursBalance.objects.create(date=date_,
-                                            user=self.user,
-                                            credit=credit,
-                                            debit=debit)
-                balance = HoursBalance.objects.filter(user=self.user, date=date_)[0].balance
+        for date_ in dates(self.first_day, self.last_day):
+            if date_ not in self.balance_dates:
+                HoursBalance.objects.create(
+                    date=date_,
+                    user=self.user,
+                    credit=calculate_credit(self.user, date_).total_seconds(),
+                    debit=calculate_debit(self.user, date_).total_seconds()
+                )
+
+            line = HoursBalance.objects.get(user=self.user, date=date_)
 
             lines.append({'date': date_,
-                          'credit': credit,
-                          'debit': debit,
-                          'balance': balance,
-                          'comment': ''})
+                          'credit': line.time_credit(),
+                          'debit': line.time_debit(),
+                          'balance': line.time_balance(),
+                          'comment': comments(self.user, date_)})
+        self.update_last_balance_date(self.last_day)
         return lines
+
+    def create_or_update_line(self, date_):
+        credit = calculate_credit(self.user, date_).total_seconds()
+        debit = calculate_debit(self.user, date_).total_seconds()
+        updated_values = {'credit': credit, 'debit': debit}
+        HoursBalance.objects.update_or_create(
+            date=date_,
+            user=self.user,
+            defaults=updated_values
+        )
+
+    def update_last_balance_date(self, date_):
+        self.office.last_balance_date = date_
+        self.office.save()

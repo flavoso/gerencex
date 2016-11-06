@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-1">
+            <h2>Balanço inexistente!</h2>
+            <p>O <a href="{% url 'my_hours_bank' username=username year=min_valid_year month=min_valid_month %}">
+                primeiro balanço mensal de {{ first_name }} {{ last_name }}</a>
+                é o de {{ min_valid_date|date:"F"|upper }} de {{ min_valid_date|date:"Y" }}.</p>
+        </div>
+    </div>
+</section>
+
+
+{% endblock %}

@@ -238,6 +238,7 @@ class TimingModelTest(TestCase):
         default_values = (t.checkin, t.created_by)
         self.assertTupleEqual((True, None), default_values)
 
+
 class RestdayModelTest(TestCase):
 
     @classmethod
@@ -341,7 +342,9 @@ class TimeCalculationsTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        Office.objects.create(name='Nenhuma lotação', initials='NL')
+        Office.objects.create(name='Nenhuma lotação',
+                              initials='NL',
+                              hours_control_start_date=datetime.date(2016, 9, 1))
         User.objects.create_user('testuser', 'test@user.com', 'senha123')
         cls.user = User.objects.get(username='testuser')
 
@@ -420,7 +423,7 @@ class CreditTriggerTest(TestCase):
              checkin=True
         )
 
-        """Test checkout creation"""
+        # Test checkout creation
         t2 = Timing.objects.create(
              user=self.user,
              date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 13, 0, 0, 0)),
@@ -436,7 +439,7 @@ class CreditTriggerTest(TestCase):
 
         self.assertEqual(reference, credit)
 
-        """Test checkout change"""
+        # Test checkout change
         t2.date_time += datetime.timedelta(hours=1)
         t2.save()
         modified_reference1 = datetime.timedelta(hours=2).seconds + tolerance.seconds
@@ -445,7 +448,7 @@ class CreditTriggerTest(TestCase):
 
         self.assertEqual(modified_reference1, modified_credit1)
 
-        """Test checkin change"""
+        # Test checkin change
         t1.date_time += datetime.timedelta(hours=1)
         t1.save()
         modified_reference2 = datetime.timedelta(hours=1).seconds + tolerance.seconds
@@ -454,7 +457,7 @@ class CreditTriggerTest(TestCase):
 
         self.assertEqual(modified_reference2, modified_credit2)
 
-        """Test new checkin (in this case, we must not have a corresponding line at HoursBalance"""
+        # Test new checkin (in this case, we must not have a corresponding line at HoursBalance)
         t3 = Timing.objects.create(
              user=self.user,
              date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 14, 0, 0, 0)),
@@ -467,5 +470,290 @@ class CreditTriggerTest(TestCase):
         self.assertEqual(modified_reference3, modified_credit3)
 
 
+class CalculateHoursBankViewTest(TestCase):
+
+    def setUp(self):
+        # Let's create a list of days beginning at a monday, at least 'n' days before today (see
+        # generate_days_list function).
+        self.days = generate_days_list(7)
+
+        self.office = Office.objects.create(
+            name='Terceira Diacomp',
+            initials='DIACOMP3',
+            checkin_tolerance=datetime.timedelta(minutes=0),
+            checkout_tolerance=datetime.timedelta(minutes=0),
+            hours_control_start_date=self.days[0]
+        )
+        self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        self.user.first_name = 'ze'
+        self.user.last_name = 'mane'
+        self.user.save()
+        self.user.userdetail.opening_hours_balance = 0
+        self.user.userdetail.office = self.office
+        self.user.save()
+        self.client.login(username='testuser', password='senha123')
+        self.resp = self.client.get(r('calculate_hours_bank'), follow=True)
+
+    def test_get(self):
+        self.assertEqual(200, self.resp.status_code)
+
+    def test_template(self):
+        self.assertTemplateUsed(self.resp, 'calculate_bank.html')
+
+    def test_post(self):
+        activate_timezone()
+        tickets = []
+
+        # Let's create the list of check-ins and checkouts
+        for d in self.days:
+            tickets.append(
+                {'date': datetime.datetime(d.year, d.month, d.day, hour=12, minute=0, second=0),
+                 'checkin': True}
+            )
+            tickets.append(
+                {'date': datetime.datetime(d.year, d.month, d.day, hour=19, minute=0, second=0),
+                 'checkin': False}
+            )
+
+        # Let's add a restday on the 3rd day:
+        d3 = self.days[2]
+
+        Restday.objects.create(
+            date=d3,
+            note='Feriado de teste',
+            work_hours=datetime.timedelta(hours=4)
+        )
+        tickets[5]['date'] = datetime.datetime(
+            d3.year, d3.month, d3.day, hour=16, minute=0, second=0
+        )
+
+        # Let's register an absence in the 4th day. The user has checked out earlier,
+        # due to medical reasons: Debit = 3 hours
+        d4 = self.days[3]
+        Absences.objects.create(
+            date=d4,
+            user=self.user,
+            cause='LM',
+            credit=0,
+            debit=datetime.timedelta(hours=3).seconds
+        )
+        tickets[7]['date'] = datetime.datetime(
+            d4.year, d4.month, d4.day, hour=16, minute=0, second=0
+        )
+
+        # Let's register the user's check ins and checkouts
+        for ticket in tickets:
+            Timing.objects.create(
+                user=self.user,
+                date_time=timezone.make_aware(ticket['date']),
+                checkin=ticket['checkin']
+            )
+
+        # Now, let's call the calculate_hours_bank view
+        self.resp2 = self.client.post(r('calculate_hours_bank'), follow=True)
+        self.assertEqual(200, self.resp2.status_code)
+        self.assertRedirects(self.resp2, r('hours_bank'))
+        self.assertTemplateUsed(self.resp2, 'hours_bank.html')
+
+        contents = [
+            'Ze Mane',
+            '0:00:00'
+        ]
+        # lines = HoursBalance.objects.filter(user=self.user).all()
+        # for line in lines:
+        #     print('{} | {} | {} | {}'.format(line.date,
+        #                                      line.time_debit(),
+        #                                      line.time_credit(),
+        #                                      line.time_balance()
+        #                                      ))
+        # print(self.resp2.content)
+        for expected in contents:
+            with self.subTest():
+                self.assertContains(self.resp2, expected)
+
+
+class MyHoursBankViewTest(TestCase):
+
+    def setUp(self):
+
+        # Let's create a list of days beginning at a monday, at least 'int' days before today (see
+        # generate_days_list function).
+        self.days = generate_days_list(7)
+
+        self.year = timezone.now().year
+        self.month = timezone.now().month
+        self.office = Office.objects.create(
+            name='Terceira Diacomp',
+            initials='DIACOMP3',
+            checkin_tolerance=datetime.timedelta(minutes=0),
+            checkout_tolerance=datetime.timedelta(minutes=0),
+            hours_control_start_date=self.days[0]
+        )
+        self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
+        self.user.first_name = 'ze'
+        self.user.last_name = 'mane'
+        self.user.save()
+        self.user.userdetail.opening_hours_balance = 0
+        self.user.userdetail.office = self.office
+        self.user.save()
+        self.client.login(username='testuser', password='senha123')
+        self.resp = self.client.get(r('my_hours_bank', 'testuser', self.year, self.month))
+
+        from gerencex.core.views import UserBalance
+        self.first_date = UserBalance(self.user, year=self.year, month=self.month).first_day
+
+    def test_get(self):
+        self.assertEqual(200, self.resp.status_code)
+
+    def test_template(self):
+        self.assertTemplateUsed(self.resp, 'my_hours_bank.html')
+
+    def test_html(self):
+        activate_timezone()
+        tickets = []
+
+        # Let's create the list of check-ins and checkouts
+        for d in self.days:
+            tickets.append(
+                {'date': datetime.datetime(d.year, d.month, d.day, hour=12, minute=0, second=0),
+                 'checkin': True}
+            )
+            tickets.append(
+                {'date': datetime.datetime(d.year, d.month, d.day, hour=19, minute=0, second=0),
+                 'checkin': False}
+            )
+
+        # Today, the user has not checked out yet
+        del(tickets[-1])
+        #
+        # # Let's add a restday on the 3rd day:
+        # d3 = self.days[2]
+        #
+        # Restday.objects.create(
+        #     date=d3,
+        #     note='Feriado de teste',
+        #     work_hours=datetime.timedelta(hours=4)
+        # )
+        # tickets[5]['date'] = datetime.datetime(
+        #     d3.year, d3.month, d3.day, hour=15, minute=0, second=0
+        # )
+        #
+        # # Let's register an absence in the 4th day. The user has checked out earlier,
+        # # due to medical reasons: Debit = 3 hours
+        # d4 = self.days[3]
+        # Absences.objects.create(
+        #     date=d4,
+        #     user=self.user,
+        #     cause='LM',
+        #     credit=0,
+        #     debit=datetime.timedelta(hours=4).seconds
+        # )
+        # tickets[7]['date'] = datetime.datetime(
+        #     d4.year, d4.month, d4.day, hour=16, minute=0, second=0
+        # )
+
+        # Let's register the user's check ins and checkouts
+        for ticket in tickets:
+            Timing.objects.create(
+                user=self.user,
+                date_time=timezone.make_aware(ticket['date']),
+                checkin=ticket['checkin']
+            )
+
+        # Now, let's call the my_hours_bank view for the current month
+        self.resp2 = self.client.get(r('my_hours_bank', 'testuser', self.year, self.month))
+        line = HoursBalance.objects.filter(user=self.user).last()
+        line_date = '<td>{:%d/%m/%Y}</td>'.format(self.days[-2])
+        line_credit = '<td>7:00:00</td>'
+        line_debit = '<td>7:00:00</td>'
+        line_balance = '<td>0:00:00</td>'
+        contents = [line_date, line_credit, line_debit, line_balance]
+        # line = "\n".join([x for x in contents])
+        # # print(self.resp2.content)
+        # self.assertContains(self.resp2, line)
+        for expected in contents:
+            with self.subTest():
+                self.assertContains(self.resp2, expected)
+
+        # line = HoursBalance.objects.filter(date=self.first_date, user=self.user).last()
+        #
+        # print('Data: {}'.format(line.date))
+        # print('Crédito: ' + str(line.credit))
+        # print('Débito: ' + str(line.debit))
+        # print('Saldo: ' + str(line.balance))
+
+        # from gerencex.core.views import comments
+        # print('Observação: {}'.format(comments(self.user, self.first_date)))
+
+        # Now, let's call the my_hours_bank view for the initial month
+        # self.resp3 = self.client.get(r('my_hours_bank',
+        #                                'testuser',
+        #                                self.days[0].year,
+        #                                self.days[0].month))
+        #
+        # line = HoursBalance.objects.filter(date=self.days[0], user=self.user).last()
+
+        # print('Data: {}'.format(line.date))
+        # print('Crédito: {}'.format(line.credit))
+        # print('Débito: {}'.format(line.debit))
+        # print('Saldo: {}'.format(line.balance))
+        # print('Crédito: {}'.format(line.time_credit()))
+        # print('Débito: {}'.format(line.time_debit()))
+        # print('Saldo: {}'.format(line.time_balance()))
+
+        # from gerencex.core.views import comments
+        # print('Observação: {}'.format(comments(self.user, self.days[0])))
+
+        # print('Resultado do calculate_debit: {}'.format(calculate_debit(self.user, self.days[0])))
+
+        # print('Carga horária: {}'.format(office.regular_work_hours))
+        # print('Last Balance Date: {}'.format(office.last_balance_date))
+        # print(self.resp2.content)
+
+# TODO: Escrever o teste depois que já houver view para produzir o balanço da divisão e do usuário
+
+
+class RestdayDebitTriggerTest(TestCase):
+    """
+    When a we record a Restday whose date is prior to the date of the Balance, the balances must
+    be recalculated for all users.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        Office.objects.create(name='Diacomp 1', initials='diacomp1')
+        Office.objects.create(name='Diacomp 2', initials='diacomp2')
+        cls.diacomp1 = Office.objects.get(initials='diacomp1')
+        cls.diacomp2 = Office.objects.get(initials='diacomp2')
+        cls.diacomp1.hours_control_start_date = datetime.date(2016, 9, 1)
+        cls.diacomp1.save()
+        cls.diacomp2.hours_control_start_date = datetime.date(2016, 10, 1)
+        cls.diacomp1.save()
+        User.objects.create_user('testuser1', 'test1@user.com', 'senha123')
+        User.objects.create_user('testuser2', 'test2@user.com', 'senha123')
+        cls.user1 = User.objects.get(username='testuser')
+        cls.user2 = User.objects.get(username='testuser')
+
+    # def test_debit_trigger(self):
+
+
 def activate_timezone():
     return timezone.activate(pytz.timezone('America/Sao_Paulo'))
+
+
+def generate_days_list(n):
+    """
+    :param n: An integer. Indicates the minimum number of days before today, from which the list
+    must begin.
+    :return: A list of datetime.date elements, beginning at the first monday prior to 'n' days
+    before today.
+    """
+    today = timezone.now().date()
+    aux = today - datetime.timedelta(days=n)
+    first_monday = aux - datetime.timedelta(days=aux.weekday())
+    days = []
+    d = first_monday
+    while d <= today:
+        if d.weekday() not in (5, 6):
+            days.append(d)
+        d += datetime.timedelta(days=1)
+    return days
