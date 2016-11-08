@@ -571,10 +571,10 @@ class CalculateHoursBankViewTest(TestCase):
         #                                      line.time_credit(),
         #                                      line.time_balance()
         #                                      ))
-        print(self.resp2.content)
-        # for expected in contents:
-        #     with self.subTest():
-        #         self.assertContains(self.resp2, expected)
+        # print(self.resp2.content)
+        for expected in contents:
+            with self.subTest():
+                self.assertContains(self.resp2, expected)
 
 
 class MyHoursBankViewTest(TestCase):

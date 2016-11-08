@@ -18,12 +18,12 @@ def total_balance_handler(sender, instance, **kwargs):
     regular_work_hours = userdetail.office.regular_work_hours.total_seconds()
     min_work_hours_for_credit = userdetail.office.min_work_hours_for_credit.total_seconds()
 
-    if regular_work_hours < instance.credit < min_work_hours_for_credit:
+    if regular_work_hours < instance.credit <= min_work_hours_for_credit:
         instance.credit = regular_work_hours
 
     if instance.credit > min_work_hours_for_credit:
-        toll = min_work_hours_for_credit - regular_work_hours
-        instance.credit -= toll
+        delta = instance.credit - min_work_hours_for_credit
+        instance.credit -= regular_work_hours + delta
 
     previous = sender.objects.filter(user=instance.user, date__lt=instance.date).last()
 
