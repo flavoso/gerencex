@@ -1,4 +1,5 @@
 {% load static %}
+{% load user_tags %}
 
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -41,7 +42,9 @@
                             <li><a href="{% url 'forgotten_checkouts' %}">Minhas saídas não registradas</a></li>
                             <li role="separator" class="divider"></li>
                             <li><a href="{% url 'hours_bank' %}">Banco de horas da Divisão</a></li>
-                            <li><a href="{% url 'calculate_hours_bank' %}">(Re)Calcular banco de horas</a></li>
+                            {% if user|has_group:"managers" %}
+                                <li><a href="{% url 'calculate_hours_bank' %}">(Re)Calcular banco de horas</a></li>
+                            {% endif %}
                             <li role="separator" class="divider"></li>
                             <li><a href="{% url 'rules' %}">Regras</a></li>
                         </ul>

@@ -21,7 +21,7 @@ class UserAdmin(BaseUserAdmin):
 
 
 class TimingAdmin(admin.ModelAdmin):
-    list_display = ('date_time', 'user', 'checkin', 'created_by')
+    list_display = ('date_time', 'user', 'checkin', 'created_by', 'client_ip', 'client_local_ip')
     list_filter = ('date_time', 'user', 'created_by')
     date_hierarchy = 'date_time'
 

@@ -158,9 +158,9 @@ class TimingViewTest(TestCase):
         self.assertEqual(created_by, self.user)
 
     def test_invalid_checkout(self):
-        """Invalid checkout: (a) occurs when the last checkin happened the day before; b) redirects
-        to 'timing', with an alert message; (c) changes userdetail.atwork to False; (d) doesn't
-        generate a checkout ticket"""
+        """Invalid checkout: (a) occurs when the last checkin didn't happen in the same day
+        before; b) redirects to 'timing', with an alert message; (c) changes userdetail.atwork to
+        False; (d) doesn't generate a checkout ticket"""
         activate_timezone()
         d = datetime.datetime.now() + datetime.timedelta(days=-1)
         date_time = timezone.make_aware(d)

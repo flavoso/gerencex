@@ -1,6 +1,8 @@
+import socket
 from datetime import timedelta, datetime, date
 
 import pytz
+from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
@@ -20,16 +22,36 @@ def home(request):
 def timing_new(request):
     activate_timezone()
 
+    # The check ins and checkouts are allowed only at office. We try to guarantee this by
+    # assuring that the client IP is close to the company IP. Do you suggest a best test?
+
+    company_site = config('COMPANY_SITE', default='')
+    company_ips = socket.gethostbyname_ex(company_site)[2] if company_site else ''
+    client_ip = get_client_ip(request)[1]
+    client_local_ip = get_client_ip(request)[0]
+    client_partial_ip = ".".join(client_ip.split('.')[0:3])
+
+    server_hostname = socket.gethostname()
+    valid_hostname = config('DEVELOPER_HOSTNAME', default='')
+
+    if not (server_hostname == valid_hostname or client_partial_ip in " ".join(company_ips)):
+        return render(request, 'invalid_check.html')
+
     if request.method == 'POST':
         if request.user.userdetail.atwork:
             request.user.userdetail.atwork = False
             request.user.userdetail.save()
-            ticket = Timing(user=request.user, checkin=False, created_by=request.user)
+            ticket = Timing(user=request.user,
+                            checkin=False,
+                            created_by=request.user,
+                            client_ip=client_ip,
+                            client_local_ip=client_local_ip)
             """
             Checkout time is recorded only if there is a checkin in the same day.
             """
-            date = ticket.date_time.date()
-            valid_checkout = bool(Timing.objects.filter(date_time__date=date, checkin=True))
+            utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
+            date_ = (ticket.date_time + utc_offset).date()
+            valid_checkout = bool(Timing.objects.filter(date_time__date=date_, checkin=True))
 
             if valid_checkout:
                 ticket.save()
@@ -40,7 +62,9 @@ def timing_new(request):
             request.user.userdetail.save()
             ticket = Timing.objects.create(user=request.user,
                                            checkin=True,
-                                           created_by=request.user)
+                                           created_by=request.user,
+                                           client_ip=client_ip,
+                                           client_local_ip=client_local_ip)
         return HttpResponseRedirect(r('timing', ticket.pk))
     return render(request, 'timing_new_not_post.html')
 
@@ -52,13 +76,11 @@ def timing(request, pk):
     ticket = get_object_or_404(Timing, pk=pk)
 
     if ticket.checkin:
-        checkin_tolerance = request.user.userdetail.office.checkin_tolerance
         context['register'] = 'entrada'
-        context['time'] = ticket.date_time - checkin_tolerance
+        context['time'] = ticket.date_time
     else:
-        checkout_tolerance = request.user.userdetail.office.checkout_tolerance
         context['register'] = 'saída'
-        context['time'] = ticket.date_time + checkout_tolerance
+        context['time'] = ticket.date_time
     return render(request, 'timing.html', context)
 
 
@@ -382,3 +404,14 @@ class UserBalance:
     def update_last_balance_date(self, date_):
         self.office.last_balance_date = date_
         self.office.save()
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    ips = []
+    if x_forwarded_for:
+        ips.append(x_forwarded_for.split(',')[0])
+    else:
+        ips.append('')
+        ips.append(request.META.get('REMOTE_ADDR'))
+    return ips

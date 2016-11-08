@@ -42,6 +42,14 @@ class Timing(models.Model):
                                    models.SET_NULL,
                                    null=True,
                                    blank=True)
+    client_ip = models.CharField('ip do cliente',
+                                 max_length=15,
+                                 blank=True,
+                                 default='')
+    client_local_ip = models.CharField('ip local do cliente',
+                                       max_length=15,
+                                       blank=True,
+                                       default='')
 
     class Meta:
         verbose_name_plural = 'registros de entrada e saída'
