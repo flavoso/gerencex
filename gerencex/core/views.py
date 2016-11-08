@@ -411,6 +411,7 @@ def get_client_ip(request):
     ips = []
     if x_forwarded_for:
         ips.append(x_forwarded_for.split(',')[0])
+        ips.append(x_forwarded_for.split(',')[-1])
     else:
         ips.append('')
         ips.append(request.META.get('REMOTE_ADDR'))
