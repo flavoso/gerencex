@@ -196,12 +196,16 @@ class Office(models.Model):
                                              default=timedelta(minutes=10))
     checkout_tolerance = models.DurationField('tolerância para saída',
                                               default=timedelta(minutes=5))
-    hours_control_start_date = models.DateField('data de início do banco de horas',
+    hours_control_start_date = models.DateField('data de início do controle de horas',
                                                 null=True,
                                                 blank=True)
     last_balance_date = models.DateField('data do último balanço',
                                          null=True,
                                          blank=True)
+    min_work_hours_for_credit = models.DurationField(
+        'jornada diária necessária para acumular créditos',
+        default=timedelta(hours=7)
+    )
 
     class Meta:
         verbose_name = 'Lotação'

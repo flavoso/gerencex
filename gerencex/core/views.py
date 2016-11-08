@@ -31,6 +31,8 @@ def timing_new(request):
     client_local_ip = get_client_ip(request)[0]
     client_partial_ip = ".".join(client_ip.split('.')[0:3])
 
+    # We need to allow check ins and checkouts from developer workstation, to avoid breaking the
+    # tests
     server_hostname = socket.gethostname()
     valid_hostname = config('DEVELOPER_HOSTNAME', default='')
 

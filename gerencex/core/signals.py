@@ -14,7 +14,19 @@ def total_balance_handler(sender, instance, **kwargs):
     Before saving, the daily balance must be calculated, taking into account the previous balance
     and the daily credit and debit.
     """
+    userdetail = UserDetail.objects.get(user=instance.user)
+    regular_work_hours = userdetail.office.regular_work_hours.total_seconds()
+    min_work_hours_for_credit = userdetail.office.min_work_hours_for_credit.total_seconds()
+
+    if regular_work_hours < instance.credit < min_work_hours_for_credit:
+        instance.credit = regular_work_hours
+
+    if instance.credit > min_work_hours_for_credit:
+        toll = min_work_hours_for_credit - regular_work_hours
+        instance.credit -= toll
+
     previous = sender.objects.filter(user=instance.user, date__lt=instance.date).last()
+
     if previous is not None:
         instance.balance = previous.balance + instance.credit - instance.debit
     else:

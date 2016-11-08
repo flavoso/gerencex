@@ -27,6 +27,7 @@ def calculate_credit(u, date):
     max_checkout_time = {'used': user.userdetail.office.max_checkout_time,
                          'value': user.userdetail.office.max_checkout_time_value}
 
+
     from gerencex.core.models import Timing
     tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
                for x in Timing.objects.filter(user=user,
