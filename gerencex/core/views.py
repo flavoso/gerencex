@@ -15,7 +15,18 @@ from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 @login_required
 def home(request):
-    return render(request, 'index.html')
+    at_work = request.user.userdetail.atwork
+    status = 'entrada' if at_work else 'saída'
+    tickets = Timing.objects.filter(user=request.user)
+    date_time = tickets.last().date_time if tickets else ''
+    lines = HoursBalance.objects.filter(user=request.user)
+    balance = lines.last().time_balance() if lines else ''
+    context = {
+        'status': status,
+        'date_time': date_time,
+        'balance': balance
+    }
+    return render(request, 'index.html', context)
 
 
 @login_required

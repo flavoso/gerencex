@@ -4,6 +4,18 @@
 {% block content %}
 <section class="container-fluid">
 <div class="row">
+    <div class="alert alert-success" role="alert">
+{#        <h3>Último registro: {{ status|capfirst }} em {{ date_time|time:"SHORT_DATE_FORMAT" }} às#}
+{#            {{ date_time|time:"H:i:s" }}</h3>#}
+        <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+        <ul>
+            <li>Último registro: {{ status|upper }} em {{ date_time }}</li>
+            <li>Saldo de horas atual: {{ balance }}</li>
+        </ul>
+
+    </div>
+</div>
+<div class="row">
     <figure class="col-sm-4">
         <a href="{% url 'hours_bank' %}">
             <img src="{% static 'img/banco-de-horas.jpg' %}" class="img-rounded"></a>
