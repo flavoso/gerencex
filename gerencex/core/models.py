@@ -202,10 +202,12 @@ class Office(models.Model):
     last_balance_date = models.DateField('data do último balanço',
                                          null=True,
                                          blank=True)
-    min_work_hours_for_credit = models.DurationField(
+    min_work_hours_for_credit = models.BooleanField(
+        'restrição de jornada diária necessária para acumular créditos',
+        default=True)
+    min_work_hours_for_credit_value = models.DurationField(
         'jornada diária necessária para acumular créditos',
-        default=timedelta(hours=7)
-    )
+        default=timedelta(hours=7))
 
     class Meta:
         verbose_name = 'Lotação'

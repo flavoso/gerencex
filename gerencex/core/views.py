@@ -283,6 +283,12 @@ def rules(request):
         }
     )
     params.append({
+        'description': Office._meta.get_field('min_work_hours_for_credit').verbose_name,
+        'active': office.min_work_hours_for_credit,
+        'value': str(office.min_work_hours_for_credit_value)
+        }
+    )
+    params.append({
         'description': Office._meta.get_field('max_daily_credit').verbose_name,
         'active': office.max_daily_credit,
         'value': office.max_daily_credit_value

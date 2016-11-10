@@ -26,22 +26,20 @@ def calculate_credit(u, date):
                         'value': user.userdetail.office.min_checkin_time_value}
     max_checkout_time = {'used': user.userdetail.office.max_checkout_time,
                          'value': user.userdetail.office.max_checkout_time_value}
+    regular_work_hours = user.userdetail.office.regular_work_hours
+    min_work_hours_for_credit = {'used': user.userdetail.office.min_work_hours_for_credit,
+                                 'value': user.userdetail.office.min_work_hours_for_credit_value}
 
+    # Beginning calculations...
+
+    credit = datetime.timedelta(seconds=0)
 
     from gerencex.core.models import Timing
     tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
                for x in Timing.objects.filter(user=user,
                                               date_time__date=date).all()
               ]
-
-    # Takes the credit from opening_hours_balance into account, if any
-
-    credit = datetime.timedelta(seconds=0)
-
-    if date == start_control_date and opening_balance > 0:
-        credit += datetime.timedelta(seconds=opening_balance)
-
-    # Calculates the credit from the Timing table
+    # Calculates the credit for all check ins and checkouts in the same day
 
     tolerance = checkout_tolerance + checkin_tolerance
 
@@ -58,7 +56,20 @@ def calculate_credit(u, date):
         for ticket in tickets:
             if not ticket['checkin']:
                 chkin = tickets.index(ticket) - 1
-                credit += ticket['date_time'] - tickets[chkin]['date_time'] + tolerance
+                credit += ticket['date_time'] - tickets[chkin]['date_time']
+
+        credit += tolerance
+
+        # Makes the necessary adjustments for min_work_hours_for_credit parameter.
+
+        if min_work_hours_for_credit['used']:
+
+            if regular_work_hours < credit <= min_work_hours_for_credit['value']:
+                credit = regular_work_hours
+
+            if credit > min_work_hours_for_credit['value']:
+                delta = credit - min_work_hours_for_credit['value']
+                credit = regular_work_hours + delta
 
     # Sums up the credit from Absences table
     # There's only one user + date peer, due to the unique_together clause
@@ -72,8 +83,15 @@ def calculate_credit(u, date):
         credit_sum = datetime.timedelta(seconds=credit_int)
     credit += credit_sum
 
+    # Daily credit is restricted to max_daily_credit, if activated
+
     if max_daily_credit['used'] and credit > max_daily_credit['value']:
         credit = max_daily_credit['value']
+
+    # Sums up the credit from opening_hours_balance, if any
+
+    if date == start_control_date and opening_balance > 0:
+        credit += datetime.timedelta(seconds=opening_balance)
 
     return credit
 
@@ -96,17 +114,14 @@ def calculate_debit(u, date):
     start_control_date = user.userdetail.office.hours_control_start_date
     regular_work_hours = user.userdetail.office.regular_work_hours  # timedelta
 
+    extra_hours = datetime.timedelta(seconds=0)
+
+    # Gets the debit from Restday and Absences models
+
     from gerencex.core.models import Restday, Absences
 
     restday = Restday.objects.filter(date=date)
     absence = Absences.objects.filter(user=user, date=date)
-
-    extra_hours = datetime.timedelta(seconds=0)
-
-    # If this is the date when control begins, gets the user's initial debit, if exists
-
-    if date == start_control_date and opening_balance < 0:
-        extra_hours += datetime.timedelta(seconds=-opening_balance)
 
     # If the user was absent at this day, takes the debit into account. This happens,
     # for example, the user needs to absent earlier, due to medical reasons
@@ -128,6 +143,11 @@ def calculate_debit(u, date):
         work_hours = restday[0].work_hours
     else:
         work_hours = regular_work_hours
+
+    # If this is the date when control begins, sums up the user's initial debit, if exists
+
+    if date == start_control_date and opening_balance < 0:
+        extra_hours += datetime.timedelta(seconds=-opening_balance)
 
     debit = work_hours + extra_hours
 
