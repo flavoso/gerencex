@@ -190,7 +190,9 @@ def hours_bank(request):
             {'username': user.username,
              'first_name': user.first_name,
              'last_name': user.last_name,
-             'balance': HoursBalance.objects.filter(user=user).last().time_balance()
+             'balance': HoursBalance.objects.filter(
+                 user=user,
+                 date=expected_balance_date).first().time_balance()
              }
         )
     return render(request, 'hours_bank.html',
