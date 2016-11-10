@@ -15,11 +15,12 @@ from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 @login_required
 def home(request):
+    balance_date = timezone.now().date() - timedelta(days=1)
     at_work = request.user.userdetail.atwork
     status = 'entrada' if at_work else 'saída'
     tickets = Timing.objects.filter(user=request.user)
     date_time = tickets.last().date_time if tickets else ''
-    lines = HoursBalance.objects.filter(user=request.user)
+    lines = HoursBalance.objects.filter(user=request.user, date=balance_date)
     balance = lines.last().time_balance() if lines else ''
     context = {
         'status': status,
