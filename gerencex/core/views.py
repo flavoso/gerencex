@@ -170,19 +170,19 @@ def absences(request, username):
 @login_required
 def hours_bank(request):
     """
-    Shows the balance of hours of office workers
+    Shows the balance of hours of office workers. It must show the balances for yesterday.
     """
     office = request.user.userdetail.office
     users = [u.user for u in office.users.all()]
-    date_ = timezone.now().date()
-    expected_balance_date = date_ - timedelta(days=1)
+    today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
 
     # Updates HoursBalance, if needed
-    if office.last_balance_date < expected_balance_date:
-        for d in dates(office.last_balance_date, date_):
+    if office.last_balance_date < today:
+        for d in dates(office.last_balance_date, today):
             for user in users:
                 UserBalance(user, year=d.year, month=d.month).create_or_update_line(d)
-        office.last_balance_date = date_
+        office.last_balance_date = today
         office.save()
     lines = []
 
@@ -193,7 +193,7 @@ def hours_bank(request):
              'last_name': user.last_name,
              'balance': HoursBalance.objects.filter(
                  user=user,
-                 date=expected_balance_date).first().time_balance()
+                 date=yesterday).first().time_balance()
              }
         )
     return render(request, 'hours_bank.html',
@@ -347,6 +347,11 @@ def activate_timezone():
 
 
 def dates(date1, date2):
+    """
+    :param date1: begin date
+    :param date2: end date
+    :return: all dates between date1 and (date2 - 1)
+    """
     d = date1
     while d < date2:
         yield d
