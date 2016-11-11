@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% load tz %}
+
 {% block content %}
 <section class="container-fluid">
 <div class="row">
@@ -9,7 +11,7 @@
 {#            {{ date_time|time:"H:i:s" }}</h3>#}
         <h4>{{ user.first_name }} {{ user.last_name }}</h4>
         <ul>
-            <li>Último registro: {{ status|upper }} em {{ date_time }}</li>
+            <li>Último registro: {{ status|upper }} em {{ date_time|timezone:"America/Sao_Paulo" }}</li>
             <li>Saldo de horas (posição de ontem): {{ balance }}</li>
         </ul>
 
