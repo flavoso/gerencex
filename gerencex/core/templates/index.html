@@ -15,18 +15,20 @@
             </ul>
         </div>
     </div>
+    {% if tickets %}
     <div class="col-sm-6">
         <div class="alert alert-success" role="alert">
-            {% if tickets %}
+
             <h4>Registros de hoje</h4>
                 <ul>
                 {% for ticket in tickets %}
                 <li>{{ ticket.status|upper }} às {{ ticket.date_time|timezone:"America/Sao_Paulo"|date:"H:i:s" }}</li>
                 {% endfor %}
                 </ul>
-            {% endif %}
+
         </div>
     </div>
+    {% endif %}
 </div>
 <div class="row">
     <div class="col-sm-4">
