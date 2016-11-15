@@ -15,17 +15,45 @@ from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 @login_required
 def home(request):
-    balance_date = timezone.now().date() - timedelta(days=1)
+    # balance_date = timezone.now().date() - timedelta(days=1)
+    # at_work = request.user.userdetail.atwork
+    # status = 'entrada' if at_work else 'saída'
+    # tickets = Timing.objects.filter(user=request.user)
+    # date_time = tickets.last().date_time if tickets else ''
+    # lines = HoursBalance.objects.filter(user=request.user, date=balance_date)
+    # balance = lines.last().time_balance() if lines else ''
+    # context = {
+    #     'status': status,
+    #     'date_time': date_time,
+    #     'balance': balance
+    # }
+    today = timezone.now().date()
+    balance_date = today - timedelta(days=1)
     at_work = request.user.userdetail.atwork
-    status = 'entrada' if at_work else 'saída'
+
+    def friendly(x):
+        return 'entrada' if x else 'saída'
+
+    status = friendly(at_work)
     tickets = Timing.objects.filter(user=request.user)
     date_time = tickets.last().date_time if tickets else ''
-    lines = HoursBalance.objects.filter(user=request.user, date=balance_date)
-    balance = lines.last().time_balance() if lines else ''
+    line = HoursBalance.objects.filter(user=request.user, date=balance_date)
+    balance = line.last().time_balance() if line else ''
+
+    today_tickets = Timing.objects.filter(user=request.user, date_time__date=today).all()
+    tickets = []
+    if today_tickets:
+        tickets = [
+            {'status': friendly(x.checkin),
+             'date_time': x.date_time}
+            for x in today_tickets
+        ]
+
     context = {
         'status': status,
         'date_time': date_time,
-        'balance': balance
+        'balance': balance,
+        'tickets': tickets
     }
     return render(request, 'index.html', context)
 

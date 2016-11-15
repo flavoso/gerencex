@@ -1,5 +1,6 @@
 import datetime
 import pytz
+from gerencex.core.models import Restday
 
 
 def calculate_credit(u, date):
@@ -29,6 +30,9 @@ def calculate_credit(u, date):
     regular_work_hours = user.userdetail.office.regular_work_hours
     min_work_hours_for_credit = {'used': user.userdetail.office.min_work_hours_for_credit,
                                  'value': user.userdetail.office.min_work_hours_for_credit_value}
+
+    is_restday = bool(Restday.objects.filter(date=date))
+    is_weekend = bool(date.weekday() in (5, 6))
 
     # Beginning calculations...
 
@@ -62,11 +66,9 @@ def calculate_credit(u, date):
 
         # Makes the necessary adjustments for min_work_hours_for_credit parameter.
 
-        if min_work_hours_for_credit['used']:
-
+        if min_work_hours_for_credit['used'] and not (is_restday or is_weekend):
             if regular_work_hours < credit <= min_work_hours_for_credit['value']:
                 credit = regular_work_hours
-
             if credit > min_work_hours_for_credit['value']:
                 delta = credit - min_work_hours_for_credit['value']
                 credit = regular_work_hours + delta

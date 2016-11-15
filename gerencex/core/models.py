@@ -3,7 +3,6 @@ from datetime import timedelta, time
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from gerencex.core import time_calculations
 from gerencex.core.validators import validate_date
 
 

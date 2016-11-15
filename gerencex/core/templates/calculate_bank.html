@@ -19,6 +19,9 @@
             <form action={% url 'calculate_hours_bank' %} method="post">
                 {% csrf_token %}
                 {{ form|bootstrap }}
+                <div class="alert alert-warning" role="alert">
+                    <p>Atenção: O recálculo do banco de horas pode demorar algum tempo.</p>
+                </div>
                 <div class="form-group">
                     <input type="submit" value="Calcular" class="btn btn-primary" />
                 </div>
