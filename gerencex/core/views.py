@@ -5,6 +5,7 @@ import pytz
 from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
@@ -15,18 +16,6 @@ from gerencex.core.time_calculations import calculate_credit, calculate_debit
 
 @login_required
 def home(request):
-    # balance_date = timezone.now().date() - timedelta(days=1)
-    # at_work = request.user.userdetail.atwork
-    # status = 'entrada' if at_work else 'saída'
-    # tickets = Timing.objects.filter(user=request.user)
-    # date_time = tickets.last().date_time if tickets else ''
-    # lines = HoursBalance.objects.filter(user=request.user, date=balance_date)
-    # balance = lines.last().time_balance() if lines else ''
-    # context = {
-    #     'status': status,
-    #     'date_time': date_time,
-    #     'balance': balance
-    # }
     today = timezone.now().date()
     balance_date = today - timedelta(days=1)
     at_work = request.user.userdetail.atwork
@@ -160,19 +149,31 @@ def absence_new(request):
     if request.method == 'POST':
         form = AbsencesForm(request.POST)
         if form.is_valid():
+            date_ = form.cleaned_data['begin']
+            user = form.cleaned_data['user']
+            cause = form.cleaned_data['cause']
             credit = form.cleaned_data['credit'].total_seconds()
             debit = form.cleaned_data['debit'].total_seconds()
-            date = form.cleaned_data['begin']
-            while date <= form.cleaned_data['end']:
-                absence = Absences(date=date,
-                                   user=form.cleaned_data['user'],
-                                   cause=form.cleaned_data['cause'],
+            not_unique = []
+
+            while date_ <= form.cleaned_data['end']:
+                absence = Absences(date=date_,
+                                   user=user,
+                                   cause=cause,
                                    credit=credit,
                                    debit=debit,
                                    )
-                absence.save()
-                date += timedelta(days=1)
-            return HttpResponseRedirect(r('absences', username=form.cleaned_data['user'].username))
+                try:
+                    absence.validate_unique(exclude=['cause', 'credit', 'debit'])
+                    absence.save()
+                except ValidationError:
+                    str_date = '{:%d/%m/%Y}'.format(date_)
+                    not_unique.append(str_date)
+                date_ += timedelta(days=1)
+
+            request.session['not_unique'] = not_unique
+            return HttpResponseRedirect(r('absences', username=user.username))
+
         else:
             return render(request, 'newabsence.html', {'form': form})
     else:
@@ -189,10 +190,13 @@ def absences(request, username):
                      'cause': d.get_cause_display(),
                      'credit': timedelta(seconds=d.credit),
                      'debit': timedelta(seconds=d.debit)})
+    not_unique = request.session.get('not_unique', [])
+    request.session['not_unique'] = []
 
     return render(request, 'absences.html', {'absences': data,
                                              'first_name': user.first_name,
-                                             'last_name': user.last_name})
+                                             'last_name': user.last_name,
+                                             'not_unique': not_unique})
 
 
 @login_required
@@ -212,8 +216,9 @@ def hours_bank(request):
                 UserBalance(user, year=d.year, month=d.month).create_or_update_line(d)
         office.last_balance_date = today
         office.save()
-    lines = []
 
+    # Generates context for template
+    lines = []
     for user in users:
         lines.append(
             {'username': user.username,
@@ -235,9 +240,9 @@ def my_hours_bank(request, username, year, month):
     user = User.objects.get(username=username)
     start_control_date = user.userdetail.office.hours_control_start_date
     min_valid_date = date(start_control_date.year, start_control_date.month, 1)
-    balance_date = date(int(year), int(month), 1)
+    first_day_of_month = date(int(year), int(month), 1)
 
-    if balance_date < min_valid_date:
+    if first_day_of_month < min_valid_date:
         return render(request,
                       'nonexistent_balance.html',
                       {'min_valid_year': str(min_valid_date.year),
@@ -247,25 +252,7 @@ def my_hours_bank(request, username, year, month):
                        'last_name': user.last_name,
                        'username': username}
                       )
-
-    try_previous = balance_date - timedelta(days=1)
-    try_next = balance_date + timedelta(days=31)
-    previous_exists = HoursBalance.objects.filter(date__year=try_previous.year,
-                                                  date__month=try_previous.month,
-                                                  user=user)
-
-    next_exists = HoursBalance.objects.filter(date__year=try_next.year,
-                                              date__month=try_next.month,
-                                              user=user)
-
-    previous = None
-    next_ = None
-
-    if previous_exists:
-        previous = {'year': str(try_previous.year), 'month': str(try_previous.month)}
-
-    if next_exists:
-        next_ = {'year': str(try_next.year), 'month': str(try_next.month)}
+    previous, next_ = previous_next(first_day_of_month, HoursBalance, user)
 
     lines = UserBalance(user, year=year, month=month).get_monthly_lines()
 
@@ -273,7 +260,7 @@ def my_hours_bank(request, username, year, month):
                                                   'username': username,
                                                   'first_name': user.first_name,
                                                   'last_name': user.last_name,
-                                                  'date': balance_date,
+                                                  'date': first_day_of_month,
                                                   'previous': previous,
                                                   'next': next_})
 
@@ -317,57 +304,127 @@ def calculate_hours_bank(request):
 @login_required
 def rules(request):
     office = request.user.userdetail.office
-    params = []
-    params.append({
+    params = [
+        {
         'description': Office._meta.get_field('regular_work_hours').verbose_name,
         'active': True,
         'value': str(office.regular_work_hours)
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('min_work_hours_for_credit').verbose_name,
         'active': office.min_work_hours_for_credit,
         'value': str(office.min_work_hours_for_credit_value)
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('max_daily_credit').verbose_name,
         'active': office.max_daily_credit,
         'value': office.max_daily_credit_value
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('max_monthly_balance').verbose_name,
         'active': office.max_monthly_balance,
         'value': office.max_monthly_balance_value
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('min_checkin_time').verbose_name,
         'active': office.min_checkin_time,
         'value': office.min_checkin_time_value
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('max_checkout_time').verbose_name,
         'active': office.max_checkout_time,
         'value': office.max_checkout_time_value
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('checkin_tolerance').verbose_name,
         'active': True,
         'value': office.checkin_tolerance
-        }
-    )
-    params.append({
+        },
+        {
         'description': Office._meta.get_field('checkout_tolerance').verbose_name,
         'active': True,
         'value': office.checkout_tolerance
         }
-    )
+    ]
 
     return render(request, 'rules.html', {'params': params})
+
+
+@login_required
+def my_tickets(request, username, year, month):
+    user = User.objects.get(username=username)
+    start_control_date = user.userdetail.office.hours_control_start_date
+    min_valid_date = date(start_control_date.year, start_control_date.month, 1)
+    first_day_of_month = date(int(year), int(month), 1)
+
+    if first_day_of_month < min_valid_date:
+        return render(request,
+                      'nonexistent_balance.html',
+                      {'min_valid_year': str(min_valid_date.year),
+                       'min_valid_month': str(min_valid_date.month),
+                       'min_valid_date': min_valid_date,
+                       'first_name': user.first_name,
+                       'last_name': user.last_name,
+                       'username': username}
+                      )
+    # previous, next_ = previous_next(first_day_of_month, Timing, user)
+
+    try_previous = first_day_of_month - timedelta(days=1)
+    try_next = first_day_of_month + timedelta(days=31)
+
+    previous_exists = Timing.objects.filter(
+        user=user,
+        date_time__year=try_previous.year,
+        date_time__month=try_previous.month,
+    )
+
+    next_exists = Timing.objects.filter(
+        date_time__year=try_next.year,
+        date_time__month=try_next.month,
+        user=user)
+
+    previous = None
+    next_ = None
+
+    if previous_exists:
+        previous = {'year': str(try_previous.year), 'month': str(try_previous.month)}
+
+    if next_exists:
+        next_ = {'year': str(try_next.year), 'month': str(try_next.month)}
+
+    tickets = [t for t in Timing.objects.filter(user=user,
+                                                date_time__year=year,
+                                                date_time__month=month).all()]
+
+    lines = []
+    for ticket in tickets:
+        if ticket.checkin:
+            lines.append({
+                'date': ticket.date_time,
+                'time_in': ticket.date_time,
+                'time_out': None
+            })
+        else:
+            lines.append({
+                'date': ticket.date_time,
+                'time_in': None,
+                'time_out': ticket.date_time
+            })
+
+    return render(request,
+                  'my_tickets.html',
+                  {'lines': tickets,
+                   'username': username,
+                   'first_name': user.first_name,
+                   'last_name': user.last_name,
+                   'date': first_day_of_month,
+                   'previous': previous,
+                   'next': next_})
+
+
+###################################
+# Auxiliary functions
+###################################
 
 
 def activate_timezone():
@@ -471,3 +528,28 @@ def get_client_ip(request):
         ips.append('')
         ips.append(request.META.get('REMOTE_ADDR'))
     return ips
+
+
+def previous_next(date_, model, user):
+    first_day_of_month = date(date_.year, date_.month, 1)
+    try_previous = first_day_of_month - timedelta(days=1)
+    try_next = first_day_of_month + timedelta(days=31)
+
+    previous_exists = model.objects.filter(date__year=try_previous.year,
+                                           date__month=try_previous.month,
+                                           user=user)
+
+    next_exists = model.objects.filter(date__year=try_next.year,
+                                       date__month=try_next.month,
+                                       user=user)
+
+    previous = None
+    next_ = None
+
+    if previous_exists:
+        previous = {'year': str(try_previous.year), 'month': str(try_previous.month)}
+
+    if next_exists:
+        next_ = {'year': str(try_next.year), 'month': str(try_next.month)}
+
+    return previous, next_

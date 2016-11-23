@@ -6,12 +6,9 @@
 <section class="container-fluid">
     {% if not_unique %}
         <div class="row">
-            <div class="col-sm-8 col-sm-offset-1">
-                <div class="alert alert-warning" role="alert">
-                    <p>Não foi possível cadastrar o(s) afastamento(s) do(s) dia(s) {{ not_unique|join:", " }}.</p>
-                    <p>Já havia afastamento(s) cadastrado(s) para esse usuário, nessa(s) data(s).</p>
-                </div>
-            </div>
+            <p class="text-alert">
+                Não foi possível cadastrar os afastamentos dos dias {{ not_unique|join:", " }}.
+            </p>
         </div>
     {% endif %}
     <div class="row">
@@ -24,7 +21,7 @@
                 <th>Data</th>
                 <th>Motivo</th>
                 <th>Crédito</th>
-                <th>Redução de Débito</th>
+                <th>Débito</th>
             </tr>
             </thead>
             <tbody>

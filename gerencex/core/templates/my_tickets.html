@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-10 col-sm-offset-1">
+            <h2>{{ first_name }} {{ last_name }}</h2>
+            <h3>Registros de ponto: {{ date|date:"F" }} de {{ date|date:"Y" }}</h3>
+
+            <table class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th class="text-center">Data</th>
+                    <th class="text-center">Horário</th>
+                    <th class="text-center">Entrada?</th>
+                </tr>
+                </thead>
+                <tbody class="text-center">
+                    {% for l in lines %}
+                        <tr class="text-center">
+                            <td>{{ l.date_time|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ l.date_time|date:"h:i:s" }}</td>
+                            <td>{{ l.checkin }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-10 col-sm-offset-1">
+            {% if previous %}
+            <a href="{% url 'my_hours_bank' username=username year=previous.year month=previous.month %}"
+               class="btn btn-default" role="button">Mês anterior</a>
+            {% endif %}
+        </div>
+        <div class="col-sm-10 col-sm-offset-10">
+            {% if next %}
+            <a href="{% url 'my_hours_bank' username=username year=next.year month=next.month %}"
+               class="btn btn-default" role="button">Mês seguinte</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+
+{% endblock %}
