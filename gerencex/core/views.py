@@ -5,13 +5,13 @@ import pytz
 from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
 from gerencex.core.forms import AbsencesForm, GenerateBalanceForm
 from gerencex.core.models import Timing, Absences, Restday, HoursBalance, Office
-from gerencex.core.time_calculations import calculate_credit, calculate_debit
+from gerencex.core.time_calculations import DateData
 
 
 @login_required
@@ -283,8 +283,8 @@ def calculate_hours_bank(request):
             for date_ in dates(begin_date, end_date):
                 for user in users:
                     updated_values = {
-                        'credit': calculate_credit(user, date_).total_seconds(),
-                        'debit': calculate_debit(user, date_).total_seconds()
+                        'credit': DateData(user, date_).credit().total_seconds(),
+                        'debit': DateData(user, date_).debit().total_seconds()
                     }
                     HoursBalance.objects.update_or_create(
                         date=date_,
@@ -489,8 +489,8 @@ class UserBalance:
                 HoursBalance.objects.create(
                     date=date_,
                     user=self.user,
-                    credit=calculate_credit(self.user, date_).total_seconds(),
-                    debit=calculate_debit(self.user, date_).total_seconds()
+                    credit=DateData(self.user, date_).credit().total_seconds(),
+                    debit=DateData(self.user, date_).debit().total_seconds()
                 )
 
             line = HoursBalance.objects.get(user=self.user, date=date_)
@@ -504,8 +504,8 @@ class UserBalance:
         return lines
 
     def create_or_update_line(self, date_):
-        credit = calculate_credit(self.user, date_).total_seconds()
-        debit = calculate_debit(self.user, date_).total_seconds()
+        credit = DateData(self.user, date_).credit().total_seconds()
+        debit = DateData(self.user, date_).debit().total_seconds()
         updated_values = {'credit': credit, 'debit': debit}
         HoursBalance.objects.update_or_create(
             date=date_,

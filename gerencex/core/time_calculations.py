@@ -1,159 +1,161 @@
 import datetime
 import pytz
-from gerencex.core.models import Restday
+from gerencex.core.models import Restday, Timing, Absences
 
 
-def calculate_credit(u, date):
-    """
-    Returns the credit for the pair user + date, as a timedelta
+class Parameters:
+    def __init__(self, user):
+        self.user = user
+        self.office = user.userdetail.office
+        self.opening_balance = user.userdetail.opening_hours_balance
+        self.regular_work_hours = self.office.regular_work_hours
+        self.start_control_date = self.office.hours_control_start_date
+        self.checkin_tolerance = self.office.checkin_tolerance
+        self.checkout_tolerance = self.office.checkout_tolerance
+        self.max_daily_credit = {'used': self.office.max_daily_credit,
+                                 'value': self.office.max_daily_credit_value}
+        self.min_checkin_time = {'used': self.office.min_checkin_time,
+                                 'value': self.office.min_checkin_time_value}
+        self.max_checkout_time = {'used': self.office.max_checkout_time,
+                                  'value': self.office.max_checkout_time_value}
+        self.min_work_hours_for_credit = {'used': self.office.min_work_hours_for_credit,
+                                          'value': self.office.min_work_hours_for_credit_value}
 
-    Credit is calculated by summing up:
-     * the credit from Timing table;
-     * the credit from Absences table
-    """
 
-    from django.contrib.auth.models import User
-    user = User.objects.get(pk=u.pk)
-    opening_balance = user.userdetail.opening_hours_balance
+class DateData:
+    def __init__(self, user, date):
+        self.user = user
+        self.date = date
+        self.param = Parameters(self.user)
+        self.zero = datetime.timedelta(seconds=0)
+        checkin_tolerance = self.param.checkin_tolerance
+        checkout_tolerance = self.param.checkout_tolerance
+        self.tolerance = checkin_tolerance + checkout_tolerance
 
-    """Get the parameters, defined for the user's office"""
+        # Date type analysis
+        self.is_restday = bool(Restday.objects.filter(date=self.date))
+        self.is_weekend = self.date.weekday() in (5, 6)
+        self.is_absence = bool(Absences.objects.filter(date=self.date, user=self.user))
+        self.is_opening_balance = self.date == self.param.opening_balance
+        self.is_regular = not (
+            self.is_restday or
+            self.is_weekend or
+            self.is_absence or
+            self.is_opening_balance
+        )
 
-    start_control_date = user.userdetail.office.hours_control_start_date
-    checkin_tolerance = user.userdetail.office.checkin_tolerance
-    checkout_tolerance = user.userdetail.office.checkout_tolerance
-    max_daily_credit = {'used': user.userdetail.office.max_daily_credit,
-                        'value': user.userdetail.office.max_daily_credit_value}
-    min_checkin_time = {'used': user.userdetail.office.min_checkin_time,
-                        'value': user.userdetail.office.min_checkin_time_value}
-    max_checkout_time = {'used': user.userdetail.office.max_checkout_time,
-                         'value': user.userdetail.office.max_checkout_time_value}
-    regular_work_hours = user.userdetail.office.regular_work_hours
-    min_work_hours_for_credit = {'used': user.userdetail.office.min_work_hours_for_credit,
-                                 'value': user.userdetail.office.min_work_hours_for_credit_value}
+    #####################
+    #   Debit methods   #
+    #####################
 
-    is_restday = bool(Restday.objects.filter(date=date))
-    is_weekend = bool(date.weekday() in (5, 6))
+    def regular_debit(self):
+        if self.is_weekend:
+            return self.zero
+        if self.is_restday:
+            restday = Restday.objects.get(date=self.date)
+            return restday.work_hours
+        return self.param.regular_work_hours
 
-    # Beginning calculations...
+    def opening_debit_delta(self):
+        if self.is_opening_balance and self.param.opening_balance < 0:
+            return datetime.timedelta(seconds=self.param.opening_balance)
+        return self.zero
 
-    credit = datetime.timedelta(seconds=0)
+    def absence_debit_delta(self):
+        if self.is_absence:
+            absence = Absences.objects.get(user=self.user, date=self.date)
+            debit_int = -absence.debit
+            return datetime.timedelta(seconds=debit_int)
+        return self.zero
 
-    from gerencex.core.models import Timing
-    tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
-               for x in Timing.objects.filter(user=user,
-                                              date_time__date=date).all()
+    def debit(self):
+        return self.regular_debit() + self.opening_debit_delta() + self.absence_debit_delta()
+
+    #####################
+    #   Credit methods  #
+    #####################
+
+    def regular_credit(self):
+        credit = self.zero
+        max_checkout_time = self.param.max_checkout_time
+        min_checkin_time = self.param.min_checkin_time
+
+        tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
+               for x in Timing.objects.filter(
+                user=self.user,
+                date_time__date=self.date).all()
               ]
-    # Calculates the credit for all check ins and checkouts in the same day
 
-    tolerance = checkout_tolerance + checkin_tolerance
+        if max_checkout_time['used'] or min_checkin_time['used']:
+            tickets = adjusted_tickets(tickets, min_checkin_time, max_checkout_time)
 
-    if max_checkout_time['used'] or min_checkin_time['used']:
-        tickets = adjusted_tickets(tickets, min_checkin_time, max_checkout_time)
-
-    if len(tickets) != 0:
+        # If the first Timing recorded is a checkout, it must not be considered in the
+        # credit calculation
+        if len(tickets) != 0 and not tickets[0]['checkin']:
+            del tickets[0]
 
         # If the last Timing recorded is a checkin, it must not be considered in the
         # credit calculation
-        if tickets[-1]['checkin']:
+        if len(tickets) != 0 and tickets[-1]['checkin']:
             del tickets[-1]
 
-        for ticket in tickets:
-            if not ticket['checkin']:
-                chkin = tickets.index(ticket) - 1
-                credit += ticket['date_time'] - tickets[chkin]['date_time']
+        # Calculate the credit out of tickets
+        if len(tickets) != 0:
+            for ticket in tickets:
+                if not ticket['checkin']:
+                    chkin = tickets.index(ticket) - 1
+                    credit += ticket['date_time'] - tickets[chkin]['date_time']
 
-        credit += tolerance
+        credit += self.tolerance if credit else self.zero
 
-        # Makes the necessary adjustments for min_work_hours_for_credit parameter.
+        return credit
 
-        if min_work_hours_for_credit['used'] and not (is_restday or is_weekend):
-            if regular_work_hours < credit <= min_work_hours_for_credit['value']:
-                credit = regular_work_hours
-            if credit > min_work_hours_for_credit['value']:
-                delta = credit - min_work_hours_for_credit['value']
-                credit = regular_work_hours + delta
+    def opening_credit_delta(self):
+        if self.is_opening_balance and self.param.opening_balance >= 0:
+            return datetime.timedelta(seconds=self.param.opening_balance)
+        return self.zero
 
-    # Sums up the credit from Absences table
-    # There's only one user + date peer, due to the unique_together clause
+    def absence_credit_delta(self):
+        if self.is_absence:
+            absence = Absences.objects.get(user=self.user, date=self.date)
+            credit_int = absence.credit
+            return datetime.timedelta(seconds=credit_int)
+        return self.zero
 
-    from gerencex.core.models import Absences
+    def min_work_hours_for_credit_delta(self):
+        """
+        :return: A negative timedelta if needed, due to min_work_hours_for_credit restriction
+        """
+        min_work_hours_for_credit = self.param.min_work_hours_for_credit
+        regular_work_hours = self.param.regular_work_hours
+        tentative_credit = self.regular_credit() + self.absence_credit_delta()
+        delta = self.zero
 
-    absences = [a for a in Absences.objects.filter(user=user, date=date)]
-    credit_sum = datetime.timedelta(seconds=0)
-    if absences:
-        credit_int = absences[0].credit
-        credit_sum = datetime.timedelta(seconds=credit_int)
-    credit += credit_sum
+        if min_work_hours_for_credit['used'] and not (self.is_restday or self.is_weekend):
+            if regular_work_hours < tentative_credit <= min_work_hours_for_credit['value']:
+                delta = -(tentative_credit - regular_work_hours)
+            if tentative_credit > min_work_hours_for_credit['value']:
+                delta = -(tentative_credit - min_work_hours_for_credit['value'])
+        return delta
 
-    # Daily credit is restricted to max_daily_credit, if activated
+    def max_daily_credit_delta(self):
+        """
+        :return: A negative timedelta if needed, due to max_daily_credit restriction
+        """
+        max_daily_credit = self.param.max_daily_credit
+        credit = self.regular_credit() + self.opening_credit_delta() + self.absence_credit_delta()
+        if max_daily_credit['used'] and credit > max_daily_credit['value']:
+            return -(credit - max_daily_credit['value'])
+        return self.zero
 
-    if max_daily_credit['used'] and credit > max_daily_credit['value']:
-        credit = max_daily_credit['value']
+    def credit(self):
+        credit = self.regular_credit() + \
+                 self.opening_credit_delta() + \
+                 self.absence_credit_delta() + \
+                 self.min_work_hours_for_credit_delta() + \
+                 self.max_daily_credit_delta()
 
-    # Sums up the credit from opening_hours_balance, if any
-
-    if date == start_control_date and opening_balance > 0:
-        credit += datetime.timedelta(seconds=opening_balance)
-
-    return credit
-
-
-def calculate_debit(u, date):
-    """
-    Weekend:        debit = 0
-    Restday:        debit = restday.work_hours
-    Absence day:    debit = REGULAR_WORK_HOURS - absence.debit
-    Normal day:     debit = REGULAR_WORK_HOURS
-
-    Debit is returned as a timedelta
-    """
-
-    from django.contrib.auth.models import User
-    user = User.objects.get(pk=u.pk)
-    opening_balance = user.userdetail.opening_hours_balance  # integer
-
-    # Get the parameters, defined for user's office
-    start_control_date = user.userdetail.office.hours_control_start_date
-    regular_work_hours = user.userdetail.office.regular_work_hours  # timedelta
-
-    extra_hours = datetime.timedelta(seconds=0)
-
-    # Gets the debit from Restday and Absences models
-
-    from gerencex.core.models import Restday, Absences
-
-    restday = Restday.objects.filter(date=date)
-    absence = Absences.objects.filter(user=user, date=date)
-
-    # If the user was absent at this day, takes the debit into account. This happens,
-    # for example, the user needs to absent earlier, due to medical reasons
-
-    if absence.count():
-        extra_hours -= datetime.timedelta(seconds=absence[0].debit)
-
-    # If date is in a weekend, work hours = 0.
-    # If this is a rest day, takes the work hours planned for the day (sometimes,
-    # like in 24th december, it's used to work from 08h00 up to midday: 4 work hours.
-    # Otherwise, takes the regular daily work hours.
-
-    is_weekend = bool(date.weekday() in (5, 6))
-    is_restday = bool(restday.count())
-
-    if is_weekend:
-        work_hours = datetime.timedelta(seconds=0)
-    elif is_restday:
-        work_hours = restday[0].work_hours
-    else:
-        work_hours = regular_work_hours
-
-    # If this is the date when control begins, sums up the user's initial debit, if exists
-
-    if date == start_control_date and opening_balance < 0:
-        extra_hours += datetime.timedelta(seconds=-opening_balance)
-
-    debit = work_hours + extra_hours
-
-    return debit
+        return credit
 
 
 def adjusted_tickets(tickets, min_checkin_time, max_checkout_time):

@@ -5,7 +5,7 @@ from django.db.models.signals import pre_save, post_save
 from django.utils import timezone
 from django.dispatch import receiver
 from gerencex.core.models import HoursBalance, UserDetail, Timing, Restday, Absences, Office
-from gerencex.core.time_calculations import calculate_credit, calculate_debit
+from gerencex.core.time_calculations import DateData
 
 
 @receiver(pre_save, sender=HoursBalance)
@@ -70,12 +70,12 @@ def credit_calculation(sender, instance, created, **kwargs):
                                                         date_time__gt=instance.date_time,
                                                         checkin=False).first()
         if next_ticket_is_checkout:
-            credit = calculate_credit(instance.user, date).seconds
-            debit = calculate_debit(instance.user, date).seconds
+            credit = DateData(instance.user, date).credit().seconds
+            debit = DateData(instance.user, date).debit().seconds
             change_balance(date, instance.user, credit, debit)
     else:
-        credit = calculate_credit(instance.user, date).seconds
-        debit = calculate_debit(instance.user, date).seconds
+        credit = DateData(instance.user, date).credit().seconds
+        debit = DateData(instance.user, date).debit().seconds
         change_balance(date, instance.user, credit, debit)
 
 
@@ -89,7 +89,7 @@ def debit_calculation_restday(sender, instance, created, **kwargs):
                                                             user__is_superuser=False)]
     if len(balance_lines) != 0:
         for line in balance_lines:
-            line.debit = calculate_debit(line.user, instance.date).seconds
+            line.debit = DateData(line.user, instance.date).debit().seconds
             line.save()
 
 
@@ -104,7 +104,7 @@ def debit_calculation_absence(sender, instance, created, **kwargs):
         balance_line = HoursBalance.objects.filter(date=instance.date,
                                                    user=instance.user)
         if balance_line:
-            balance_line.first().debit = calculate_debit(instance.user, instance.date).seconds
+            balance_line.first().debit = DateData(instance.user, instance.date).debit().seconds
             balance_line.first().save()
 
 

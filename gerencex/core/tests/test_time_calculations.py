@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 from gerencex.core.models import Timing, Restday, Absences, Office
-from gerencex.core.time_calculations import calculate_credit, calculate_debit
+from gerencex.core.time_calculations import DateData
 
 
 class TimeCalculationsTest(TestCase):
@@ -14,7 +14,8 @@ class TimeCalculationsTest(TestCase):
     def setUpTestData(cls):
         Office.objects.create(name='Nenhuma lotação',
                               initials='NL',
-                              hours_control_start_date=datetime.date(2016, 9, 1)
+                              hours_control_start_date=datetime.date(2016, 9, 1),
+                              min_work_hours_for_credit=False
                               )
 
         User.objects.create_user('testuser', 'test@user.com', 'senha123')
@@ -33,7 +34,7 @@ class TimeCalculationsTest(TestCase):
              checkin=False
         )
 
-        credit = calculate_credit(self.user, datetime.date(2016, 10, 3))
+        credit = DateData(self.user, datetime.date(2016, 10, 3)).credit()
         checkout_tolerance = self.user.userdetail.office.checkout_tolerance
         checkin_tolerance = self.user.userdetail.office.checkin_tolerance
         tolerance = checkout_tolerance + checkin_tolerance
@@ -45,7 +46,7 @@ class TimeCalculationsTest(TestCase):
         Normal day:     debit = REGULAR_WORK_HOURS
         """
 
-        debit = calculate_debit(self.user, datetime.date(2016, 10, 10))
+        debit = DateData(self.user, datetime.date(2016, 10, 10)).debit()
         self.assertEqual(self.user.userdetail.office.regular_work_hours, debit)
 
     def test_debit_restday(self):
@@ -57,7 +58,7 @@ class TimeCalculationsTest(TestCase):
             note='Feriado N. Sª Aparecida',
             work_hours=datetime.timedelta(hours=0)
         )
-        debit = calculate_debit(self.user, datetime.date(2016, 10, 12))
+        debit = DateData(self.user, datetime.date(2016, 10, 12)).debit()
         self.assertEqual(datetime.timedelta(hours=0), debit)
 
     def test_debit_absence_day(self):
@@ -72,7 +73,7 @@ class TimeCalculationsTest(TestCase):
             credit=0,
             debit=25200
         )
-        debit = calculate_debit(self.user, datetime.date(2016, 10, 10))
+        debit = DateData(self.user, datetime.date(2016, 10, 10)).debit()
         self.assertEqual(datetime.timedelta(hours=0), debit)
 
 
