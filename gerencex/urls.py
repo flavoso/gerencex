@@ -17,7 +17,8 @@ from django.conf.urls import url, include
 from django.contrib import admin
 from django.contrib.auth.views import logout
 from gerencex.core.views import home, my_hours_bank, hours_bank, timing, timing_new, \
-    timing_fail, forgotten_checkouts, absences, absence_new, rules, calculate_hours_bank, my_tickets
+    timing_fail, forgotten_checkouts, absences, absence_new, rules, calculate_hours_bank, my_tickets, \
+    restdays
 
 urlpatterns = [
     url('^logout/$', logout, {'next_page': 'home'}, name='logout'),
@@ -37,5 +38,6 @@ urlpatterns = [
     url(r'^afastamentos/(?P<username>\w+)/$', absences, name='absences'),
     url(r'^registros_de_ponto/(?P<username>\w+)/(?P<year>\d{4})/(?P<month>\d{1,2})/$', my_tickets,
         name='my_tickets'),
+    url(r'^dias_inuteis/(?P<year>\d{4})/$', restdays, name='restdays'),
     url(r'^admin/', admin.site.urls),
 ]

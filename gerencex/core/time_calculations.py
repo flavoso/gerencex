@@ -31,6 +31,10 @@ class DateData:
         checkin_tolerance = self.param.checkin_tolerance
         checkout_tolerance = self.param.checkout_tolerance
         self.tolerance = checkin_tolerance + checkout_tolerance
+        self.tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
+                        for x in Timing.objects.filter(user=self.user,
+                                                       date_time__date=self.date).all()
+                        ]
 
         # Date type analysis
         self.is_restday = bool(Restday.objects.filter(date=self.date))
@@ -80,11 +84,7 @@ class DateData:
         max_checkout_time = self.param.max_checkout_time
         min_checkin_time = self.param.min_checkin_time
 
-        tickets = [{'checkin': x.checkin, 'date_time': x.date_time}
-               for x in Timing.objects.filter(
-                user=self.user,
-                date_time__date=self.date).all()
-              ]
+        tickets = self.tickets
 
         if max_checkout_time['used'] or min_checkin_time['used']:
             tickets = adjusted_tickets(tickets, min_checkin_time, max_checkout_time)

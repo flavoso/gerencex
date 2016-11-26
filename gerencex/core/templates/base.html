@@ -49,6 +49,7 @@
                                 <li><a href="{% url 'calculate_hours_bank' %}">(Re)Calcular banco de horas</a></li>
                             {% endif %}
                             <li role="separator" class="divider"></li>
+                            <li><a href="{% url 'restdays' year=current_year %}">Feriados e afins</a></li>
                             <li><a href="{% url 'rules' %}">Regras</a></li>
                         </ul>
                 </li>

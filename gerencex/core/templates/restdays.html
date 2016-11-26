@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <h2>Feriados e afins em {{ year }}</h2>
+            <h3>(Omitidos os que caem em fim de semana)</h3>
+            <table class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th class="text-center">Data</th>
+                    <th class="text-center">Dia da semana</th>
+                    <th class="text-center">Descrição</th>
+                    <th class="text-center">Jornada de trabalho prevista</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for restday in restdays %}
+                        <tr class="text-center">
+                        <td>{{ restday.date|date:"SHORT_DATE_FORMAT" }}</td>
+                        <td>{{ restday.date|date:"l" }}</td>
+                        <td>{{ restday.note }}</td>
+                        <td>{{ restday.work_hours }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            {% if previous %}
+            <a href="{% url 'restdays' year=previous %}"
+               class="btn btn-default" role="button">Ano anterior</a>
+            {% endif %}
+        </div>
+        <div class="col-sm-1 col-sm-offset-8">
+            {% if next %}
+            <a href="{% url 'restdays' year=next %}"
+               class="btn btn-default" role="button">Ano seguinte</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

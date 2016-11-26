@@ -205,15 +205,25 @@ def hours_bank(request):
     Shows the balance of hours of office workers. It must show the balances for yesterday.
     """
     office = request.user.userdetail.office
+    last_balance_date = office.last_balance_date
     users = [u.user for u in office.users.all()]
     today = timezone.now().date()
     yesterday = today - timedelta(days=1)
 
     # Updates HoursBalance, if needed
-    if office.last_balance_date < today:
-        for d in dates(office.last_balance_date, today):
+    if last_balance_date < today:
+        for d in dates(last_balance_date, today):
             for user in users:
-                UserBalance(user, year=d.year, month=d.month).create_or_update_line(d)
+                # UserBalance(user, year=d.year, month=d.month).create_or_update_line(d)
+                updated_values = {
+                        'credit': DateData(user, d).credit().total_seconds(),
+                        'debit': DateData(user, d).debit().total_seconds()
+                    }
+                HoursBalance.objects.update_or_create(
+                    date=d,
+                    user=user,
+                    defaults=updated_values
+                )
         office.last_balance_date = today
         office.save()
 
@@ -224,9 +234,9 @@ def hours_bank(request):
             {'username': user.username,
              'first_name': user.first_name,
              'last_name': user.last_name,
-             'balance': HoursBalance.objects.filter(
+             'balance': HoursBalance.objects.get(
                  user=user,
-                 date=yesterday).first().time_balance()
+                 date=yesterday).time_balance()
              }
         )
     return render(request, 'hours_bank.html',
@@ -422,9 +432,33 @@ def my_tickets(request, username, year, month):
                    'next': next_})
 
 
-###################################
-# Auxiliary functions
-###################################
+@login_required
+def restdays(request, year):
+    year = int(year)
+    restdays = [x for x in Restday.objects.filter(date__year=year).all()]
+    list_ = []
+    for restday in restdays:
+        list_.append(
+            {'date': restday.date,
+             'note': restday.note,
+             'work_hours': restday.work_hours}
+        )
+    has_previous_year = bool(Restday.objects.filter(date__year=year-1))
+    has_next_year = bool(Restday.objects.filter(date__year=year+1))
+
+    previous = year - 1 if has_previous_year else None
+    next_ = year + 1 if has_next_year else None
+
+    return render(request, 'restdays.html', {'restdays': list_,
+                                             'year': year,
+                                             'previous': previous,
+                                             'next': next_}
+                  )
+
+
+#############################
+#    Auxiliary functions    #
+#############################
 
 
 def activate_timezone():

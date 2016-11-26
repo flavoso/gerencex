@@ -98,17 +98,17 @@ class CalculateHoursBankViewTest(TestCase):
             'Ze Mane',
             '0:00:00'
         ]
-        lines = HoursBalance.objects.filter(user=self.user).all()
-        for line in lines:
-            print('{} | {} | {} | {}'.format(line.date,
-                                             line.time_credit(),
-                                             line.time_debit(),
-                                             line.time_balance()
-                                             ))
+        # lines = HoursBalance.objects.filter(user=self.user).all()
+        # for line in lines:
+        #     print('{} | {} | {} | {}'.format(line.date,
+        #                                      line.time_credit(),
+        #                                      line.time_debit(),
+        #                                      line.time_balance()
+        #                                      ))
         # print(self.resp2.content)
-        # for expected in contents:
-        #     with self.subTest():
-        #         self.assertContains(self.resp2, expected)
+        for expected in contents:
+            with self.subTest():
+                self.assertContains(self.resp2, expected)
 
 
 def activate_timezone():
