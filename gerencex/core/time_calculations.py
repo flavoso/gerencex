@@ -27,7 +27,6 @@ class DateData:
     def __init__(self, user, date):
         self.user = user
         self.date = date
-
         self.param = Parameters(self.user)
         self.zero = datetime.timedelta(seconds=0)
         checkin_tolerance = self.param.checkin_tolerance
@@ -146,7 +145,6 @@ class DateData:
         """
         max_daily_credit = self.param.max_daily_credit
         credit = self.regular_credit() + \
-                 self.opening_credit_delta() + \
                  self.absence_credit_delta() + \
                  self.min_work_hours_for_credit_delta()
         if max_daily_credit['used'] and credit > max_daily_credit['value']:
