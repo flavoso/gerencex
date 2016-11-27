@@ -143,7 +143,10 @@ class DateData:
         :return: A negative timedelta if needed, due to max_daily_credit restriction
         """
         max_daily_credit = self.param.max_daily_credit
-        credit = self.regular_credit() + self.opening_credit_delta() + self.absence_credit_delta()
+        credit = self.regular_credit() + \
+                 self.opening_credit_delta() + \
+                 self.absence_credit_delta() + \
+                 self.min_work_hours_for_credit_delta()
         if max_daily_credit['used'] and credit > max_daily_credit['value']:
             return -(credit - max_daily_credit['value'])
         return self.zero
