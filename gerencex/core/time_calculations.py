@@ -135,7 +135,7 @@ class DateData:
             if regular_work_hours < tentative_credit <= min_work_hours_for_credit['value']:
                 delta = -(tentative_credit - regular_work_hours)
             if tentative_credit > min_work_hours_for_credit['value']:
-                delta = -(tentative_credit - min_work_hours_for_credit['value'])
+                delta = -(min_work_hours_for_credit['value'] - regular_work_hours)
         return delta
 
     def max_daily_credit_delta(self):
