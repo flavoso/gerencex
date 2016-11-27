@@ -7,6 +7,7 @@ class Parameters:
     def __init__(self, user):
         self.user = user
         self.office = user.userdetail.office
+        self.start_control_date = self.office.hours_control_start_date
         self.opening_balance = user.userdetail.opening_hours_balance
         self.regular_work_hours = self.office.regular_work_hours
         self.start_control_date = self.office.hours_control_start_date
@@ -26,6 +27,7 @@ class DateData:
     def __init__(self, user, date):
         self.user = user
         self.date = date
+
         self.param = Parameters(self.user)
         self.zero = datetime.timedelta(seconds=0)
         checkin_tolerance = self.param.checkin_tolerance
@@ -40,7 +42,7 @@ class DateData:
         self.is_restday = bool(Restday.objects.filter(date=self.date))
         self.is_weekend = self.date.weekday() in (5, 6)
         self.is_absence = bool(Absences.objects.filter(date=self.date, user=self.user))
-        self.is_opening_balance = self.date == self.param.opening_balance
+        self.is_opening_balance = self.date == self.param.start_control_date
         self.is_regular = not (
             self.is_restday or
             self.is_weekend or
