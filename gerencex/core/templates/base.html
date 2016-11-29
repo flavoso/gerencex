@@ -41,7 +41,8 @@
                         Banco de horas <span class="caret"></span></a>
                         <ul class="dropdown-menu">
                             <li><a href="{% url 'my_hours_bank' username=user.username year=current_year month=current_month %}">Meu extrato de horas</a></li>
-                            <li><a href="{% url 'absences' username=user.username %}">Meus afastamentos</a></li>
+                            <li><a href="{% url 'my_tickets' username=user.username year=current_year month=current_month %}">Meus registros de entrada e saída</a></li>
+                            <li><a href="{% url 'absences' username=user.username year=current_year %}">Meus afastamentos</a></li>
                             <li><a href="{% url 'forgotten_checkouts' %}">Minhas saídas não registradas</a></li>
                             <li role="separator" class="divider"></li>
                             <li><a href="{% url 'hours_bank' %}">Banco de horas do setor</a></li>

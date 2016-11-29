@@ -22,9 +22,9 @@ class MyTicketsViewTest(TestCase):
         self.user.userdetail.office = self.office
         self.user.save()
         self.client.login(username='testuser', password='senha123')
-        today = timezone.now().date()
-        self.year = today.year
-        self.month = today.month
+        self.today = datetime.date(2016, 11, 15)
+        self.year = self.today.year
+        self.month = self.today.month
         self.resp = self.client.get(r('my_tickets', self.user.username, self.year, self.month))
 
     def test_get(self):
@@ -41,11 +41,11 @@ class MyTicketsViewTest(TestCase):
         # Let's create the list of check-ins and checkouts
         for d in self.days:
             tickets.append(
-                {'date': datetime.datetime(d.year, d.month, d.day, hour=12, minute=0, second=0),
+                {'value': datetime.datetime(d.year, d.month, d.day, hour=12, minute=0, second=0),
                  'checkin': True}
             )
             tickets.append(
-                {'date': datetime.datetime(d.year, d.month, d.day, hour=19, minute=0, second=0),
+                {'value': datetime.datetime(d.year, d.month, d.day, hour=19, minute=0, second=0),
                  'checkin': False}
             )
 
@@ -53,19 +53,20 @@ class MyTicketsViewTest(TestCase):
         for ticket in tickets:
             Timing.objects.create(
                 user=self.user,
-                date_time=timezone.make_aware(ticket['date']),
+                date_time=timezone.make_aware(ticket['value']),
                 checkin=ticket['checkin']
             )
 
         resp2 = self.client.get(r('my_tickets', self.user.username, self.year, self.month))
+        # print(resp2.content)
 
         date = '15/11/2016'
         chk_in = '12:00:00'
-        chk_out = '12:00:00'
+        chk_out = '19:00:00'
 
-        self.assertContains(resp2, date, count=2)
-        self.assertContains(resp2, chk_in, count=6)
-        self.assertContains(resp2, chk_out, count=6)
+        self.assertContains(resp2, date, count=1)
+        self.assertContains(resp2, chk_in, count=len(self.days))
+        self.assertContains(resp2, chk_out, count=len(self.days))
 
 
 def activate_timezone():

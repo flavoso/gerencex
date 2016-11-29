@@ -150,13 +150,15 @@ def absence_new(request):
         form = AbsencesForm(request.POST)
         if form.is_valid():
             date_ = form.cleaned_data['begin']
+            begin_ = form.cleaned_data['begin']
+            end_ = form.cleaned_data['end']
             user = form.cleaned_data['user']
             cause = form.cleaned_data['cause']
             credit = form.cleaned_data['credit'].total_seconds()
             debit = form.cleaned_data['debit'].total_seconds()
             not_unique = []
 
-            while date_ <= form.cleaned_data['end']:
+            while date_ <= end_:
                 absence = Absences(date=date_,
                                    user=user,
                                    cause=cause,
@@ -172,7 +174,7 @@ def absence_new(request):
                 date_ += timedelta(days=1)
 
             request.session['not_unique'] = not_unique
-            return HttpResponseRedirect(r('absences', username=user.username))
+            return HttpResponseRedirect(r('absences', username=user.username, year=begin_.year))
 
         else:
             return render(request, 'newabsence.html', {'form': form})
@@ -182,21 +184,32 @@ def absence_new(request):
 
 
 @login_required
-def absences(request, username):
+def absences(request, username, year):
     user = get_object_or_404(User, username=username)
+    year = int(year)
+    absences_ = [x for x in Absences.objects.filter(date__year=year, user=user).all()]
     data = []
-    for d in Absences.objects.filter(user=user).all():
+    for d in absences_:
         data.append({'date': d.date,
                      'cause': d.get_cause_display(),
                      'credit': timedelta(seconds=d.credit),
                      'debit': timedelta(seconds=d.debit)})
+    has_previous_year = bool(Absences.objects.filter(date__year=year-1, user=user))
+    has_next_year = bool(Absences.objects.filter(date__year=year+1, user=user))
+
+    previous = year - 1 if has_previous_year else None
+    next_ = year + 1 if has_next_year else None
+
     not_unique = request.session.get('not_unique', [])
     request.session['not_unique'] = []
 
     return render(request, 'absences.html', {'absences': data,
                                              'first_name': user.first_name,
                                              'last_name': user.last_name,
-                                             'not_unique': not_unique})
+                                             'not_unique': not_unique,
+                                             'year': year,
+                                             'previous': previous,
+                                             'next': next_})
 
 
 @login_required
@@ -369,7 +382,7 @@ def my_tickets(request, username, year, month):
 
     if first_day_of_month < min_valid_date:
         return render(request,
-                      'nonexistent_balance.html',
+                      'nonexistent_tickets.html',
                       {'min_valid_year': str(min_valid_date.year),
                        'min_valid_month': str(min_valid_date.month),
                        'min_valid_date': min_valid_date,
@@ -382,16 +395,17 @@ def my_tickets(request, username, year, month):
     try_previous = first_day_of_month - timedelta(days=1)
     try_next = first_day_of_month + timedelta(days=31)
 
-    previous_exists = Timing.objects.filter(
+    previous_exists = bool(Timing.objects.filter(
         user=user,
         date_time__year=try_previous.year,
         date_time__month=try_previous.month,
-    )
+    ))
 
-    next_exists = Timing.objects.filter(
+    next_exists = bool(Timing.objects.filter(
+        user=user,
         date_time__year=try_next.year,
         date_time__month=try_next.month,
-        user=user)
+        ))
 
     previous = None
     next_ = None
@@ -404,26 +418,48 @@ def my_tickets(request, username, year, month):
 
     tickets = [t for t in Timing.objects.filter(user=user,
                                                 date_time__year=year,
-                                                date_time__month=month).all()]
+                                                date_time__month=month).order_by('date_time')]
+    dates_ = list(set([t.date_time.date() for t in tickets]))
+    dates_.sort()
 
     lines = []
-    for ticket in tickets:
-        if ticket.checkin:
-            lines.append({
-                'date': ticket.date_time,
-                'time_in': ticket.date_time,
-                'time_out': None
-            })
-        else:
-            lines.append({
-                'date': ticket.date_time,
-                'time_in': None,
-                'time_out': ticket.date_time
-            })
+    line = []
+
+    # 'lines' is a list of lists. Each list contains date, checkin datetime and checkout datetime
+    for date_ in dates_:
+        tkts = [t for t in tickets if t.date_time.date() == date_]
+        for tkt in tkts:
+            if tkt.checkin:
+                line.append(date_)
+                line.append(tkt.date_time)
+                if tkt == tkts[-1]:
+                    line.append(None)
+                    lines.append(line)
+                    line = []
+            else:
+                if len(line) == 0:
+                    line.append(date_)
+                    line.append(None)
+                    line.append(tkt.date_time)
+                else:
+                    line.append(tkt.date_time)
+                lines.append(line)
+                line = []
+
+    # Let's transform 'lines' in a list of dictionaries, for rendering in template
+    table = []
+    for l in lines:
+        table.append(
+            {
+                'date': l[0],
+                'check_in': l[1],
+                'checkout': l[2]
+            }
+        )
 
     return render(request,
                   'my_tickets.html',
-                  {'lines': tickets,
+                  {'lines': table,
                    'username': username,
                    'first_name': user.first_name,
                    'last_name': user.last_name,

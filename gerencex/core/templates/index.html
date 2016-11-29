@@ -40,9 +40,9 @@
     </div>
     <div class="col-sm-4">
         <figure>
-            <a href="{% url 'absences' user.username %}">
+            <a href="{% url 'absences' username=user.username year=current_year %}">
                 <img src="{% static 'img/afastamento.jpg' %}" class="img-rounded"></a>
-            <h2><a href="{% url 'absences' user.username %}">Afastamentos</a></h2>
+            <h2><a href="{% url 'absences' username=user.username year=current_year %}">Afastamentos</a></h2>
         </figure>
     </div>
     <div class="col-sm-4">

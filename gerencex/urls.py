@@ -35,7 +35,7 @@ urlpatterns = [
     url(r'^registros_de_ponto/saidas_nao_registradas/', forgotten_checkouts,
         name='forgotten_checkouts'),
     url(r'^afastamentos/cadastrar/$', absence_new, name='absence_new'),
-    url(r'^afastamentos/(?P<username>\w+)/$', absences, name='absences'),
+    url(r'^afastamentos/(?P<username>\w+)/(?P<year>\d{4})/$', absences, name='absences'),
     url(r'^registros_de_ponto/(?P<username>\w+)/(?P<year>\d{4})/(?P<month>\d{1,2})/$', my_tickets,
         name='my_tickets'),
     url(r'^dias_inuteis/(?P<year>\d{4})/$', restdays, name='restdays'),

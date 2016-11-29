@@ -15,31 +15,58 @@
         </div>
     {% endif %}
     <div class="row">
-    <div class="col-sm-8 col-sm-offset-1">
-        <h2>{{ first_name }} {{ last_name }}</h2>
-        <h3>Afastamentos cadastrados</h3>
-        <table class="table table-bordered table-hover table-striped">
-            <thead>
-            <tr>
-                <th>Data</th>
-                <th>Motivo</th>
-                <th>Crédito</th>
-                <th>Redução de Débito</th>
-            </tr>
-            </thead>
-            <tbody>
-                {% for a in absences %}
-                    <tr>
-                    <td>{{ a.date|date:"SHORT_DATE_FORMAT" }}</td>
-                    <td>{{ a.cause }}</td>
-                    <td>{{ a.credit }}</td>
-                    <td>{{ a.debit }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="col-sm-8 col-sm-offset-1">
+            <h2>Afastamentos cadastrados</h2>
+        </div>
     </div>
-</div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <h3>{{ first_name }} {{ last_name }}</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <h4>Exercício: {{ year }}</h4>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <table class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Motivo</th>
+                    <th>Crédito</th>
+                    <th>Redução de Débito</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for a in absences %}
+                        <tr>
+                        <td>{{ a.date|date:"SHORT_DATE_FORMAT" }}</td>
+                        <td>{{ a.cause }}</td>
+                        <td>{{ a.credit }}</td>
+                        <td>{{ a.debit }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            {% if previous %}
+            <a href="{% url 'absences' username=user.username year=previous %}"
+               class="btn btn-default" role="button">Ano anterior</a>
+            {% endif %}
+        </div>
+        <div class="col-sm-1 col-sm-offset-8">
+            {% if next %}
+            <a href="{% url 'absences' username=user.username year=next %}"
+               class="btn btn-default" role="button">Ano seguinte</a>
+            {% endif %}
+        </div>
+    </div>
 </section>
 
 {% endblock %}

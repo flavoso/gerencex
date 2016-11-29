@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-1">
+            <h2>Registros inexistentes!</h2>
+            <p>Os <a href="{% url 'my_tickets' username=username year=min_valid_year month=min_valid_month %}">
+                primeiros registros de {{ first_name }} {{ last_name }}</a>
+                ocorreram em {{ min_valid_date|date:"F"|upper }} de {{ min_valid_date|date:"Y" }}.</p>
+        </div>
+    </div>
+</section>
+
+
+{% endblock %}
