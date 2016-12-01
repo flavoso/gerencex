@@ -1,3 +1,4 @@
+import calendar
 import socket
 from datetime import timedelta, datetime, date
 
@@ -492,6 +493,14 @@ def restdays(request, year):
                   )
 
 
+@login_required
+def calculations(request, username, year, month, day):
+    user = User.objects.get(username=username)
+    date_ = date(int(year), int(month), int(day))
+    datedata = DateData(user, date_)
+    return render(request, 'calculations.html', {'date': datedata})
+
+
 #############################
 #    Auxiliary functions    #
 #############################
@@ -542,10 +551,12 @@ class UserBalance:
         self.office = user.userdetail.office
         self.year = int(kwargs['year'])
         self.month = int(kwargs['month'])
-        self.last_month_day = date(self.year, self.month + 1, 1)
+        days_in_month = calendar.monthrange(self.year, self.month)[1]
+        first_month_day = date(self.year, self.month, 1)
+        self.last_month_day = first_month_day + timedelta(days=days_in_month)
         self.last_day = min(timezone.now().date(), self.last_month_day)
         self.start_date = user.userdetail.office.hours_control_start_date
-        first_month_day = date(self.year, self.month, 1)
+
         self.first_day = max(first_month_day, self.start_date)
         balance = [l for l in HoursBalance.objects.filter(date__year=self.year,
                                                           date__month=self.month,

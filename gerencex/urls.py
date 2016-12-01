@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.contrib.auth.views import logout
 from gerencex.core.views import home, my_hours_bank, hours_bank, timing, timing_new, \
     timing_fail, forgotten_checkouts, absences, absence_new, rules, calculate_hours_bank, my_tickets, \
-    restdays
+    restdays, calculations
 
 urlpatterns = [
     url('^logout/$', logout, {'next_page': 'home'}, name='logout'),
@@ -29,6 +29,8 @@ urlpatterns = [
         name='my_hours_bank'),
     url(r'^banco_de_horas/calcular', calculate_hours_bank, name='calculate_hours_bank'),
     url(r'^banco_de_horas/regras/$', rules, name='rules'),
+    url(r'^banco_de_horas/(?P<username>\w+)/(?P<year>\d{4})/(?P<month>\d{1,2})/(?P<day>\d{1,2})/$',
+        calculations, name='calculations'),
     url(r'^registros_de_ponto/novo/$', timing_new, name='timing_new'),
     url(r'^registros_de_ponto/(\d+)/$', timing, name='timing'),
     url(r'^registros_de_ponto/falha/$', timing_fail, name='timing_fail'),
@@ -41,3 +43,4 @@ urlpatterns = [
     url(r'^dias_inuteis/(?P<year>\d{4})/$', restdays, name='restdays'),
     url(r'^admin/', admin.site.urls),
 ]
+

@@ -35,8 +35,10 @@
                     {% for l in lines %}
                         <tr class="text-center">
                         <td>{{ l.date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ l.credit }}</td>
-                        <td>{{ l.debit }}</td>
+                        <td><a href={% url 'calculations' username=username year=l.date.year month=l.date.month day=l.date.day %}>
+                            {{ l.credit }}</a></td>
+                        <td><a href={% url 'calculations' username=username year=l.date.year month=l.date.month day=l.date.day %}>
+                            {{ l.debit }}</a></td>
                         <td class="text-center">
                             {% if '-' in l.balance %}
                                 <spam class="debit">{{ l.balance }}</spam>
