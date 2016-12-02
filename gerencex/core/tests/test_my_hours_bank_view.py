@@ -99,13 +99,13 @@ class MyHoursBankViewTest(TestCase):
         # Now, let's call the my_hours_bank view for the current month
         self.resp2 = self.client.get(r('my_hours_bank', 'testuser', self.year, self.month))
         line = HoursBalance.objects.filter(user=self.user).last()
-        line_date = '<td>{:%d/%m/%Y}</td>'.format(self.days[-2])
-        line_credit = '<td>7:00:00</td>'
-        line_debit = '<td>7:00:00</td>'
-        line_balance = '<td>0:00:00</td>'
+        line_date = '{:%d/%m/%Y}'.format(self.days[-2])
+        line_credit = '7:00:00'
+        line_debit = '7:00:00'
+        line_balance = '0:00:00'
         # contents = [line_date, line_credit, line_debit, line_balance]
         # line = "\n".join([x for x in contents])
-        # # print(self.resp2.content)
+        # print(self.resp2.content)
         # self.assertContains(self.resp2, line)
         contents = [''] if timezone.now().date().day == 1 else \
             [line_date, line_credit, line_debit, line_balance]

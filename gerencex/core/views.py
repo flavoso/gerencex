@@ -214,6 +214,19 @@ def absences(request, username, year):
 
 
 @login_required
+def absences_office(request, year):
+    user = request.user
+    office = user.userdetail.office
+    users = [u.user for u in office.users.all()]
+    context = {
+        'office': office,
+        'user': user,
+        'users': users
+    }
+    return render(request, 'absences_office.html', context)
+
+
+@login_required
 def hours_bank(request):
     """
     Shows the balance of hours of office workers. It must show the balances for yesterday.

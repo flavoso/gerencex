@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <h2>{{ office.name }}</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <h3>Afastamentos</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            <ul>
+                {% for user in users|dictsort:"first_name" %}
+                    <li><a href="{% url 'absences' username=user.username year=current_year %}">
+                        {{ user.first_name }} {{ user.last_name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8 col-sm-offset-1">
+            {% if previous %}
+            <a href="{% url 'absences_office' year=previous %}"
+               class="btn btn-default" role="button">Ano anterior</a>
+            {% endif %}
+        </div>
+        <div class="col-sm-1 col-sm-offset-8">
+            {% if next %}
+            <a href="{% url 'absences_office' year=next %}"
+               class="btn btn-default" role="button">Ano seguinte</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

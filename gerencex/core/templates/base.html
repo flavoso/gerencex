@@ -48,7 +48,10 @@
                             <li><a href="{% url 'forgotten_checkouts' %}">Minhas saídas não registradas</a></li>
                             <li role="separator" class="divider"></li>
                             <li><a href="{% url 'hours_bank' %}">Banco de horas do setor</a></li>
+                            <li><a href="{% url 'absences_office' year=current_year %}">Afastamentos do setor</a></li>
                             {% if user|has_group:"managers" %}
+                                <li role="separator" class="divider"></li>
+                                <li><a href="{% url 'absence_new' %}">Cadastrar afastamento</a></li>
                                 <li><a href="{% url 'calculate_hours_bank' %}">(Re)Calcular banco de horas</a></li>
                             {% endif %}
                             <li role="separator" class="divider"></li>
