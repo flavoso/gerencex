@@ -82,7 +82,8 @@
                         {% endif %}
                         {% if date.param.max_daily_credit.used %}
                         <tr>
-                            <td>Dedução devida ao critério de crédito diário máximo</td>
+                            <td>Dedução devida ao critério de <br>
+                                crédito diário máximo ({{ date.param.max_daily_credit.value|timedelta }})</td>
                             <td class="text-center">{{ date.max_daily_credit_delta|timedelta }}</td>
                         </tr>
                         {% endif %}
