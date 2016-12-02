@@ -1,99 +1,149 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% load tz %}
+{% load user_tags %}
 
 {% block content %}
 
 <section class="container-fluid">
     <div class="row">
-        <div class="col-sm-6">
-            <h2 class="text-center">Crédito</h2>
-            <table class="table table-bordered table-hover table-striped">
-                <thead>
-                    <tr>
-                        <th>Parcela</th>
-                        <th class="text-center">Horas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if date.is_opening_balance %}
-                    <tr>
-                        <td>Crédito pré-existente (abertura da conta)</td>
-                        <td class="text-center">{{ date.opening_credit_delta }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <td>Horas trabalhadas no dia <br>
-                            (somadas a {{ date.tolerance }} de tolerância)</td>
-                        <td class="text-center">{{ date.regular_credit }}</td>
-                    </tr>
-                    {% if date.is_absence %}
-                    <tr>
-                        <td>Horas creditadas devido a afastamento <br>
-                            (curso, inspeção etc.)</td>
-                        <td class="text-center">{{ date.absence_credit_delta }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if date.param.min_work_hours_for_credit.used %}
-                    <tr>
-                        <td>Dedução devida ao critério de <br>
-                            número mínimo de horas para crédito ({{ date.param.min_work_hours_for_credit.value }})</td>
-                        <td class="text-center">{{ date.min_work_hours_for_credit_delta }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if date.param.max_daily_credit.used %}
-                    <tr>
-                        <td>Dedução devida ao critério de crédito diário máximo</td>
-                        <td class="text-center">{{ date.min_work_hours_for_credit_delta }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <td><strong>TOTAL</strong></td>
-                        <td class="text-center"><strong>{{ date.credit }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="col-sm-5 col-sm-offset-1">
+            <h2>Memória de cálculo</h2>
+            <h3>{{ date.user.first_name }} {{ date.user.last_name }}: {{ date.date|date:"SHORT_DATE_FORMAT" }}</h3>
         </div>
-        <div class="col-sm-6">
-            <h2 class="text-center">Débito</h2>
-            <table class="table table-bordered table-hover table-striped">
-                <thead>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-3">
+            <div class="panel panel-default">
+                <div class="panel-heading text-center">
+                    <strong>REGISTROS DE ENTRADA E SAÍDA</strong>
+                </div>
+                <table class="table table-bordered table-hover table-striped">
+                    <thead>
                     <tr>
-                        <th>Parcela</th>
-                        <th class="text-center">Horas</th>
+                        <th class="text-center">Tipo</th>
+                        <th class="text-center">Horário</th>
                     </tr>
-                </thead>
-                <tbody>
-                    {% if date.is_opening_balance %}
-                    <tr>
-                        <td>Débito pré-existente (abertura da conta)</td>
-                        <td class="text-center">{{ date.opening_debit_delta }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <td>Carga horária prevista no dia
-                            {% if date.is_weekend or date.is_restday %}
-                                <br>(Dia não útil)
-                            {% else  %}
-                                <br>(Expediente normal)
+                    </thead>
+                    <tbody>
+                    {% for d in date.tickets %}
+                        <tr>
+                            {% if d.checkin %}
+                                <td class="text-center">Entrada</td>
+                            {% else %}
+                                <td class="text-center">Saída</td>
                             {% endif %}
-                        </td>
-                        <td class="text-center">{{ date.regular_debit }}</td>
-                    </tr>
-                    {% if date.is_absence %}
-                    <tr>
-                        <td>Dedução devida a afastamento <br>
-                            (férias, licença médica etc.)</td>
-                        <td class="text-center">{{ date.absence_debit_delta }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <td><strong>TOTAL</strong></td>
-                        <td class="text-center"><strong>{{ date.debit }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+                            <td class="text-center">{{ d.date_time|timezone:"America/Sao_Paulo"|time:"H:i:s" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-5 col-sm-offset-1">
+            <div class="panel panel-default">
+                <div class="panel-heading text-center">
+                    <strong>CRÉDITO</strong>
+                </div>
+                <table class="table table-bordered table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Parcela</th>
+                            <th class="text-center">Horas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if date.is_opening_balance %}
+                        <tr>
+                            <td>Crédito pré-existente (abertura da conta)</td>
+                            <td class="text-center">{{ date.opening_credit_delta|timedelta }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td>Horas trabalhadas no dia <br>
+                                (somadas a {{ date.tolerance }} de tolerância)</td>
+                            <td class="text-center">{{ date.regular_credit|timedelta }}</td>
+                        </tr>
+                        {% if date.is_absence %}
+                        <tr>
+                            <td>Horas creditadas devido a afastamento <br>
+                                (curso, inspeção etc.)</td>
+                            <td class="text-center">{{ date.absence_credit_delta|timedelta }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if date.param.min_work_hours_for_credit.used %}
+                        <tr>
+                            <td>Dedução devida ao critério de <br>
+                                número mínimo de horas para crédito ({{ date.param.min_work_hours_for_credit.value|timedelta }})</td>
+                            <td class="text-center">{{ date.min_work_hours_for_credit_delta|timedelta }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if date.param.max_daily_credit.used %}
+                        <tr>
+                            <td>Dedução devida ao critério de crédito diário máximo</td>
+                            <td class="text-center">{{ date.max_daily_credit_delta|timedelta }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-center"><strong>{{ date.credit|timedelta }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-sm-5">
+            <div class="panel panel-default">
+                <div class="panel-heading text-center">
+                    <strong>DÉBITO</strong>
+                </div>
+                <table class="table table-bordered table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Parcela</th>
+                            <th class="text-center">Horas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if date.is_opening_balance %}
+                        <tr>
+                            <td>Débito pré-existente (abertura da conta)</td>
+                            <td class="text-center">{{ date.opening_debit_delta|timedelta }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td>Jornada de trabalho prevista
+                                {% if date.is_weekend or date.is_restday %}
+                                    <br>(Dia não útil)
+                                {% else  %}
+                                    <br>(Expediente normal)
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ date.regular_debit|timedelta }}</td>
+                        </tr>
+                        {% if date.is_absence %}
+                        <tr>
+                            <td>Dedução devida a afastamento <br>
+                                (férias, licença médica etc.)</td>
+                            <td class="text-center">{{ date.absence_debit_delta|timedelta }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-center"><strong>{{ date.debit|timedelta }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-3 col-sm-offset-1">
+            <a href="{% url 'my_hours_bank' username=date.user.username year=date.date.year month=date.date.month %}">
+                Voltar ao extrato de horas
+            </a>
         </div>
     </div>
 </section>

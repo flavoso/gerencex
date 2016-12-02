@@ -41,7 +41,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                    {% for a in absences %}
+                    {% for a in absences|dictsort:"date" %}
                         <tr>
                         <td>{{ a.date|date:"SHORT_DATE_FORMAT" }}</td>
                         <td>{{ a.cause }}</td>
