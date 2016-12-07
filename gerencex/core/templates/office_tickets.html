@@ -11,19 +11,19 @@
     </div>
     <div class="row">
         <div class="col-sm-8 col-sm-offset-1">
-            <h3>Afastamentos</h3>
+            <h3>Registros de entrada e saída</h3>
         </div>
     </div>
     <div class="row">
         <div class="col-sm-8 col-sm-offset-1">
             <ul>
                 {% for user in users|dictsort:"first_name" %}
-                    <li><a href="{% url 'absences' username=user.username year=current_year %}">
+                    <li><a href="{% url 'my_tickets' username=user.username year=current_year month=current_month %}">
                         {{ user.first_name }} {{ user.last_name }}</a></li>
                 {% endfor %}
             </ul>
         </div>
-    </div>
+    </div> 
 </section>
 
 {% endblock %}

@@ -125,12 +125,24 @@ def timing_fail(request):
 
 
 @login_required
+def office_tickets(request):
+    user = request.user
+    office = user.userdetail.office
+    users = [u.user for u in office.users.all()]
+    context = {
+        'office': office,
+        'user': user,
+        'users': users
+    }
+    return render(request, 'office_tickets.html', context)
+
+
+@login_required
 def forgotten_checkouts(request):
     """Get the check ins which have no check outs at the same day, via an indirect approach: two
     consecutive check ins indicate the target."""
 
-    queryset = Timing.objects.all().order_by('user', 'date_time')
-    tickets = [entry for entry in queryset]  # Caching the queryset, to avoid new database lookups
+    tickets = [x for x in Timing.objects.all().order_by('user', 'date_time')]
 
     regs = []
 
@@ -217,7 +229,7 @@ def absences(request, username, year):
 
 
 @login_required
-def absences_office(request, year):
+def absences_office(request):
     user = request.user
     office = user.userdetail.office
     users = [u.user for u in office.users.all()]
