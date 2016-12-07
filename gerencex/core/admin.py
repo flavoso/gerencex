@@ -1,5 +1,3 @@
-import datetime
-
 from django.contrib import admin
 
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -14,6 +12,7 @@ class UserDetailInLine(admin.TabularInline):
     model = UserDetail
     can_delete = False
     verbose_name_plural = 'detalhes'
+
 
 # Define a new User admin
 class UserAdmin(BaseUserAdmin):

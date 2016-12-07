@@ -3,7 +3,7 @@ from datetime import timedelta, datetime, date
 
 import pytz
 from decouple import config
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
@@ -161,6 +161,7 @@ def forgotten_checkouts(request):
 
 
 @login_required
+@permission_required('core.add_absences')
 def absence_new(request):
     if request.method == 'POST':
         form = AbsencesForm(request.POST)
