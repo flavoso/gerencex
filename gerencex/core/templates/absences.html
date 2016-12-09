@@ -56,13 +56,13 @@
     <div class="row">
         <div class="col-sm-8 col-sm-offset-1">
             {% if previous %}
-            <a href="{% url 'absences' username=user.username year=previous %}"
+            <a href="{% url 'absences' username=username year=previous %}"
                class="btn btn-default" role="button">Ano anterior</a>
             {% endif %}
         </div>
         <div class="col-sm-1 col-sm-offset-8">
             {% if next %}
-            <a href="{% url 'absences' username=user.username year=next %}"
+            <a href="{% url 'absences' username=username year=next %}"
                class="btn btn-default" role="button">Ano seguinte</a>
             {% endif %}
         </div>

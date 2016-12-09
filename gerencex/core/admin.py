@@ -44,7 +44,8 @@ class AbsencesAdmin(admin.ModelAdmin):
 
 
 class OfficeAdmin(admin.ModelAdmin):
-    list_display = ('initials', 'name', 'active')
+    list_display = ('initials', 'name', 'active', 'linked_to')
+    list_filter = ('linked_to', )
 
 
 # Re-register UserAdmin

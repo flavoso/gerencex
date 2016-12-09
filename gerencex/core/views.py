@@ -221,6 +221,7 @@ def absences(request, username, year):
     request.session['not_unique'] = []
 
     return render(request, 'absences.html', {'absences': data,
+                                             'username': user.username,
                                              'first_name': user.first_name,
                                              'last_name': user.last_name,
                                              'not_unique': not_unique,

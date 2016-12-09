@@ -207,6 +207,12 @@ class Office(models.Model):
     min_work_hours_for_credit_value = models.DurationField(
         'jornada diária necessária para acumular créditos',
         default=timedelta(hours=7))
+    linked_to = models.ForeignKey('self',
+                                  models.SET_DEFAULT,
+                                  default=1,
+                                  blank=True,
+                                  null=True,
+                                  related_name='linkedin')
 
     class Meta:
         verbose_name = 'Lotação'
