@@ -110,6 +110,13 @@ class CalculateHoursBankViewTest(TestCase):
             with self.subTest():
                 self.assertContains(self.resp2, expected)
 
+        # Now, let's recalculate the hours:
+        self.client.session['begin_date'] = str(self.days[3])
+        self.resp3 = self.client.post(r('calculate_hours_bank'), follow=True)
+        for expected in contents:
+            with self.subTest():
+                self.assertContains(self.resp3, expected)
+
 
 def activate_timezone():
     return timezone.activate(pytz.timezone('America/Sao_Paulo'))

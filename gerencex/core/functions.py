@@ -152,7 +152,7 @@ def updates_hours_balance(office, date_):
                     'debit': DateData(user, d).debit().total_seconds()
                 }
                 HoursBalance.objects.update_or_create(
-                    date=date_,
+                    date=d,
                     user=user,
                     defaults=updated_values
                 )

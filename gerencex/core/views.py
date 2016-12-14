@@ -163,8 +163,10 @@ def forgotten_checkouts(request):
 @login_required
 @permission_required('core.add_absences')
 def absence_new(request):
+    office = request.user.userdetail.office
+    users = User.objects.filter(userdetail__office=office)
     if request.method == 'POST':
-        form = AbsencesForm(request.POST)
+        form = AbsencesForm(request.POST, users=users)
         if form.is_valid():
             date_ = form.cleaned_data['begin']
             begin_ = form.cleaned_data['begin']
@@ -196,7 +198,7 @@ def absence_new(request):
         else:
             return render(request, 'newabsence.html', {'form': form})
     else:
-        form = AbsencesForm()
+        form = AbsencesForm(users=users)
         return render(request, 'newabsence.html', {'form': form})
 
 

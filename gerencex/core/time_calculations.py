@@ -63,7 +63,7 @@ class DateData:
 
     def opening_debit_delta(self):
         if self.is_opening_balance and self.param.opening_balance < 0:
-            return datetime.timedelta(seconds=self.param.opening_balance)
+            return datetime.timedelta(seconds=-self.param.opening_balance)
         return self.zero
 
     def absence_debit_delta(self):
