@@ -130,6 +130,7 @@ class Absences(models.Model):
     LIC_POLIT = 'LA'
     GOZO_RECESSO = 'GR'
     FALTA = 'FT'
+    RECESSO = 'RE'
     OUTROS = 'OU'
 
     ABSENCES_CHOICES = (
@@ -142,6 +143,7 @@ class Absences(models.Model):
         (LIC_POLIT, 'Licença para atividade política'),
         (GOZO_RECESSO, 'Gozo do recesso (formal)'),
         (FALTA, 'Falta não justificada'),
+        (RECESSO, 'Recesso regimental'),
         (OUTROS, 'Outros afastamentos'),
     )
 
