@@ -67,7 +67,7 @@ class DateData:
         return self.zero
 
     def absence_debit_delta(self):
-        if self.is_absence:
+        if self.is_absence and not self.is_weekend and not self.is_restday:
             absence = Absences.objects.get(user=self.user, date=self.date)
             debit_int = -absence.debit
             return datetime.timedelta(seconds=debit_int)
