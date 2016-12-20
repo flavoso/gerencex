@@ -298,7 +298,10 @@ def calculate_hours_bank(request):
             office = request.user.userdetail.office
             start_control = office.hours_control_start_date
             form_begin = form.cleaned_data['begin']
-            begin_date = start_control if not form_begin else form_begin
+            if not form_begin or form_begin < start_control:
+                begin_date = start_control
+            else:
+                begin_date = form_begin
             request.session['begin_date'] = str(begin_date)
             return HttpResponseRedirect(r('hours_bank'))
         else:
