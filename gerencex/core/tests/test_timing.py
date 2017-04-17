@@ -63,8 +63,8 @@ class TimingViewTest(TestCase):
 
     def test_invalid_checkout(self):
         """Invalid checkout: (a) occurs when the last checkin didn't happen in the same day
-        before; b) redirects to 'timing', with an alert message; (c) changes userdetail.atwork to
-        False; (d) doesn't generate a checkout ticket"""
+        before; b) redirects to 'timing_fail'; (c) changes userdetail.atwork to False;
+        (d) doesn't generate a checkout ticket"""
         activate_timezone()
         now = datetime.datetime.now()
         d = now + datetime.timedelta(days=-1)
