@@ -43,7 +43,9 @@ class TimingViewTest(TestCase):
         to 'timing'; (c) changes userdetail.atwork to False; (d) generates a checkout ticket;
         (e) the ticket is created by the user"""
         activate_timezone()
-        d = datetime.datetime.now() + datetime.timedelta(hours=-1)
+        utc_offset = datetime.datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
+        now = datetime.datetime.now() + utc_offset
+        d = now + datetime.timedelta(hours=-1)
         date_time = timezone.make_aware(d)
         Timing.objects.create(user=self.user, date_time=date_time, checkin=True,
                               created_by=self.user)
@@ -66,7 +68,8 @@ class TimingViewTest(TestCase):
         before; b) redirects to 'timing_fail'; (c) changes userdetail.atwork to False;
         (d) doesn't generate a checkout ticket"""
         activate_timezone()
-        now = datetime.datetime.now()
+        utc_offset = datetime.datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
+        now = datetime.datetime.now() + utc_offset
         d = now + datetime.timedelta(days=-1)
         date_time = timezone.make_aware(d)
         Timing.objects.create(user=self.user, date_time=date_time, checkin=True,
