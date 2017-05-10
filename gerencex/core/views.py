@@ -392,6 +392,7 @@ def rules(request):
 
 @login_required
 def my_tickets(request, username, year, month):
+    activate_timezone()
     user = get_object_or_404(User, username=username)
     start_control_date = user.userdetail.office.hours_control_start_date
     min_valid_date = date(start_control_date.year, start_control_date.month, 1)
@@ -436,7 +437,14 @@ def my_tickets(request, username, year, month):
     tickets = [t for t in Timing.objects.filter(user=user,
                                                 date_time__year=year,
                                                 date_time__month=month).order_by('date_time')]
-    dates_ = list(set([t.date_time.date() for t in tickets]))
+
+    # The date_time in tickets are stored in UTC. So, let's change them to local time.
+    utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
+    # tickets_localtime = tickets
+    # for t in tickets_localtime:
+    #     t.date_time += utc_offset
+    dates_ = list(set([(t.date_time + utc_offset).date() for t in tickets]))
+
     dates_.sort()
 
     lines = []
