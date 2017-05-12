@@ -434,16 +434,17 @@ def my_tickets(request, username, year, month):
     if next_exists:
         next_ = {'year': str(try_next.year), 'month': str(try_next.month)}
 
-    tickets = [t for t in Timing.objects.filter(user=user,
-                                                date_time__year=year,
-                                                date_time__month=month).order_by('date_time')]
+    tickets_utc = [t for t in Timing.objects.filter(user=user,
+                                                    date_time__year=year,
+                                                    date_time__month=month).order_by('date_time')]
 
     # The date_time in tickets are stored in UTC. So, let's change them to local time.
     utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
-    # tickets_localtime = tickets
-    # for t in tickets_localtime:
-    #     t.date_time += utc_offset
-    dates_ = list(set([(t.date_time + utc_offset).date() for t in tickets]))
+    tickets = tickets_utc
+    for t in tickets:
+        t.date_time += utc_offset
+
+    dates_ = list(set([t.date_time.date() for t in tickets]))
 
     dates_.sort()
 
@@ -456,7 +457,7 @@ def my_tickets(request, username, year, month):
         for tkt in tkts:
             if tkt.checkin:
                 line.append(date_)
-                line.append(tkt.date_time)
+                line.append(tkt.date_time - utc_offset)
                 if tkt == tkts[-1]:
                     line.append(None)
                     lines.append(line)
@@ -465,9 +466,9 @@ def my_tickets(request, username, year, month):
                 if len(line) == 0:
                     line.append(date_)
                     line.append(None)
-                    line.append(tkt.date_time)
+                    line.append(tkt.date_time - utc_offset)
                 else:
-                    line.append(tkt.date_time)
+                    line.append(tkt.date_time - utc_offset)
                 lines.append(line)
                 line = []
 
