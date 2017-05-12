@@ -67,8 +67,8 @@ def timing_new(request):
     server_hostname = socket.gethostname()
     valid_hostname = config('DEVELOPER_HOSTNAME', default='')
 
-    if not (server_hostname == valid_hostname or client_partial_ip in " ".join(company_ips)):
-        return render(request, 'invalid_check.html')
+#    if not (server_hostname == valid_hostname or client_partial_ip in " ".join(company_ips)):
+#        return render(request, 'invalid_check.html')
 
     if request.method == 'POST':
         if request.user.userdetail.atwork:
