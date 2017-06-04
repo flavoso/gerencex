@@ -1,3 +1,4 @@
+import calendar
 import socket
 from datetime import timedelta, datetime, date
 
@@ -14,6 +15,8 @@ from gerencex.core.functions import activate_timezone, get_client_ip, previous_n
     UserBalance, updates_hours_balance
 from gerencex.core.models import Timing, Absences, Restday, HoursBalance, Office
 from gerencex.core.time_calculations import DateData
+
+current_tz = timezone.get_current_timezone()
 
 
 @login_required
@@ -82,10 +85,17 @@ def timing_new(request):
             """
             Checkout time is recorded only if there is a checkin in the same day.
             """
-            utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
-            date_ = (ticket.date_time + utc_offset).date()
+            # utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
+            # date_ = (ticket.date_time + utc_offset).date()
+            date_ = ticket.date_time.astimezone(current_tz).date()
+            utctz = pytz.timezone('UTC')
+            min_local_checkin = timezone.make_aware(
+                datetime(date_.year, date_.month, date_.day, 0, 0, 0),
+                timezone=current_tz
+            )
+            min_utc_checkin = min_local_checkin.astimezone(utctz)
             valid_checkout = bool(Timing.objects.filter(user=request.user,
-                                                        date_time__date=date_,
+                                                        date_time__gte=min_utc_checkin,
                                                         checkin=True))
 
             if valid_checkout:
@@ -252,7 +262,7 @@ def hours_bank(request):
     """
     office = request.user.userdetail.office
     users = [u.user for u in office.users.all()]
-    today = timezone.now().date()
+    today = timezone.now().astimezone(current_tz).date()
     yesterday = today - timedelta(days=1)
     date_ = None
 
@@ -266,7 +276,6 @@ def hours_bank(request):
         request.session.pop('begin_date')
 
     # Updates HoursBalance, if needed:
-
     updates_hours_balance(office, date_)
 
     # Generates context for template
@@ -392,11 +401,12 @@ def rules(request):
 
 @login_required
 def my_tickets(request, username, year, month):
-    activate_timezone()
     user = get_object_or_404(User, username=username)
     start_control_date = user.userdetail.office.hours_control_start_date
     min_valid_date = date(start_control_date.year, start_control_date.month, 1)
     first_day_of_month = date(int(year), int(month), 1)
+    days_in_month = calendar.monthrange(int(year), int(month))[1]
+    last_day_of_month = first_day_of_month + timedelta(days=days_in_month-1)
 
     if first_day_of_month < min_valid_date:
         return render(request,
@@ -410,41 +420,49 @@ def my_tickets(request, username, year, month):
                       )
     # previous, next_ = previous_next(first_day_of_month, Timing, user)
 
-    try_previous = first_day_of_month - timedelta(days=1)
-    try_next = first_day_of_month + timedelta(days=31)
+    previous_day = first_day_of_month - timedelta(days=1)
+    next_day = last_day_of_month + timedelta(days=1)
+
+    first_datetime_of_month = timezone.make_aware(
+        datetime(int(year), int(month), 1, 0, 0, 0)
+    )
+    last_datetime_of_month = timezone.make_aware(
+        datetime(int(year), int(month), days_in_month, 23, 59, 59)
+    )
 
     previous_exists = bool(Timing.objects.filter(
         user=user,
-        date_time__year=try_previous.year,
-        date_time__month=try_previous.month,
-    ))
+        date_time__lt=first_datetime_of_month)
+    )
 
     next_exists = bool(Timing.objects.filter(
         user=user,
-        date_time__year=try_next.year,
-        date_time__month=try_next.month,
-        ))
+        date_time__gt=last_datetime_of_month)
+    )
 
     previous = None
     next_ = None
 
     if previous_exists:
-        previous = {'year': str(try_previous.year), 'month': str(try_previous.month)}
+        previous = {'year': str(previous_day.year), 'month': str(previous_day.month)}
 
     if next_exists:
-        next_ = {'year': str(try_next.year), 'month': str(try_next.month)}
+        next_ = {'year': str(next_day.year), 'month': str(next_day.month)}
 
-    tickets_utc = [t for t in Timing.objects.filter(user=user,
-                                                    date_time__year=year,
-                                                    date_time__month=month).order_by('date_time')]
+    tickets_utc = [t for t in Timing.objects.filter(
+        user=user,
+        date_time__gte=first_datetime_of_month,
+        date_time__lte=last_datetime_of_month).order_by('date_time')]
 
-    # The date_time in tickets are stored in UTC. So, let's change them to local time.
-    utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
-    tickets = tickets_utc
-    for t in tickets:
-        t.date_time += utc_offset
+    # The date_time in tickets are stored in UTC. So, let's change them to local time,
+    # to avoid problems when extracting dates from date_times.
+    # for t in tickets:
+    #     t.date_time += utc_offset
+    tickets_local = tickets_utc
+    for t in tickets_local:
+        t.date_time = timezone.localtime(t.date_time)
 
-    dates_ = list(set([t.date_time.date() for t in tickets]))
+    dates_ = list(set([t.date_time.date() for t in tickets_local]))
 
     dates_.sort()
 
@@ -453,11 +471,11 @@ def my_tickets(request, username, year, month):
 
     # 'lines' is a list of lists. Each list contains date, checkin datetime and checkout datetime
     for date_ in dates_:
-        tkts = [t for t in tickets if t.date_time.date() == date_]
+        tkts = [t for t in tickets_local if t.date_time.date() == date_]
         for tkt in tkts:
             if tkt.checkin:
                 line.append(date_)
-                line.append(tkt.date_time - utc_offset)
+                line.append(tkt.date_time)
                 if tkt == tkts[-1]:
                     line.append(None)
                     lines.append(line)
@@ -466,9 +484,9 @@ def my_tickets(request, username, year, month):
                 if len(line) == 0:
                     line.append(date_)
                     line.append(None)
-                    line.append(tkt.date_time - utc_offset)
+                    line.append(tkt.date_time)
                 else:
-                    line.append(tkt.date_time - utc_offset)
+                    line.append(tkt.date_time)
                 lines.append(line)
                 line = []
 
@@ -497,9 +515,9 @@ def my_tickets(request, username, year, month):
 @login_required
 def restdays(request, year):
     year = int(year)
-    restdays = [x for x in Restday.objects.filter(date__year=year).all()]
+    rest_days = [x for x in Restday.objects.filter(date__year=year).all()]
     list_ = []
-    for restday in restdays:
+    for restday in rest_days:
         list_.append(
             {'date': restday.date,
              'note': restday.note,

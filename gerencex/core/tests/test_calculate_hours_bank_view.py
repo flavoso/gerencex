@@ -7,6 +7,8 @@ from django.test import TestCase
 from django.utils import timezone
 from gerencex.core.models import Timing, Restday, Absences, Office, HoursBalance
 
+current_tz = timezone.get_current_timezone()
+
 
 class CalculateHoursBankViewTest(TestCase):
 
@@ -40,17 +42,22 @@ class CalculateHoursBankViewTest(TestCase):
         self.assertTemplateUsed(self.resp, 'calculate_bank.html')
 
     def test_post(self):
-        activate_timezone()
+        # activate_timezone()
         tickets = []
 
         # Let's create the list of check-ins and checkouts
+
         for d in self.days:
             tickets.append(
-                {'date': datetime.datetime(d.year, d.month, d.day, hour=12, minute=0, second=0),
+                {'date': timezone.make_aware(
+                    datetime.datetime(d.year, d.month, d.day, hour=12, minute=0, second=0)
+                ),
                  'checkin': True}
             )
             tickets.append(
-                {'date': datetime.datetime(d.year, d.month, d.day, hour=18, minute=30, second=0),
+                {'date': timezone.make_aware(
+                    datetime.datetime(d.year, d.month, d.day, hour=18, minute=30, second=0)
+                ),
                  'checkin': False}
             )
 
@@ -62,8 +69,9 @@ class CalculateHoursBankViewTest(TestCase):
             note='Feriado de teste',
             work_hours=datetime.timedelta(hours=4)
         )
-        tickets[5]['date'] = datetime.datetime(
-            d3.year, d3.month, d3.day, hour=16, minute=0, second=0
+        tickets[5]['date'] = timezone.make_aware(datetime.datetime(
+            d3.year, d3.month, d3.day, hour=16, minute=0, second=0),
+            timezone=current_tz
         )
 
         # Let's register an absence in the 4th day. The user has checked out earlier,
@@ -76,15 +84,15 @@ class CalculateHoursBankViewTest(TestCase):
             credit=0,
             debit=datetime.timedelta(hours=3).seconds
         )
-        tickets[7]['date'] = datetime.datetime(
-            d4.year, d4.month, d4.day, hour=15, minute=0, second=0
+        tickets[7]['date'] = timezone.make_aware(datetime.datetime(
+            d4.year, d4.month, d4.day, hour=15, minute=0, second=0),
         )
 
         # Let's register the user's check ins and checkouts
         for ticket in tickets:
             Timing.objects.create(
                 user=self.user,
-                date_time=timezone.make_aware(ticket['date']),
+                date_time=ticket['date'],
                 checkin=ticket['checkin']
             )
 
