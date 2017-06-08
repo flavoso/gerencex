@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
 from gerencex.core.forms import AbsencesForm, GenerateBalanceForm
-from gerencex.core.functions import activate_timezone, get_client_ip, previous_next, \
+from gerencex.core.functions import get_client_ip, previous_next, \
     UserBalance, updates_hours_balance
 from gerencex.core.models import Timing, Absences, Restday, HoursBalance, Office
 from gerencex.core.time_calculations import DateData
@@ -54,7 +54,6 @@ def home(request):
 
 @login_required
 def timing_new(request):
-    activate_timezone()
 
     # The check ins and checkouts are allowed only at office. We try to guarantee this by
     # assuring that the client IP is close to the company IP. Do you suggest a better test?
@@ -88,14 +87,11 @@ def timing_new(request):
             # utc_offset = datetime.now(pytz.timezone('America/Sao_Paulo')).utcoffset()
             # date_ = (ticket.date_time + utc_offset).date()
             date_ = ticket.date_time.astimezone(current_tz).date()
-            utctz = pytz.timezone('UTC')
-            min_local_checkin = timezone.make_aware(
+            required_checkin = timezone.make_aware(
                 datetime(date_.year, date_.month, date_.day, 0, 0, 0),
-                timezone=current_tz
             )
-            min_utc_checkin = min_local_checkin.astimezone(utctz)
             valid_checkout = bool(Timing.objects.filter(user=request.user,
-                                                        date_time__gte=min_utc_checkin,
+                                                        date_time__gte=required_checkin,
                                                         checkin=True))
 
             if valid_checkout:
@@ -116,7 +112,6 @@ def timing_new(request):
 
 @login_required
 def timing(request, pk):
-    activate_timezone()
     context = {}
     ticket = get_object_or_404(Timing, pk=pk)
 
@@ -262,7 +257,7 @@ def hours_bank(request):
     """
     office = request.user.userdetail.office
     users = [u.user for u in office.users.all()]
-    today = timezone.now().astimezone(current_tz).date()
+    today = timezone.localtime(timezone.now()).date()
     yesterday = today - timedelta(days=1)
     date_ = None
 

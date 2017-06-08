@@ -1,5 +1,4 @@
 import datetime
-# import pytz
 from django.utils import timezone
 from gerencex.core.models import Restday, Timing, Absences
 
@@ -61,7 +60,7 @@ class Tickets(UserParameters, DateParameters):
                     ]
 
         tickets2 = [x for x in tickets1
-                    if x.date_time.astimezone(current_tz).date == self.date
+                    if x.date_time.astimezone(current_tz).date() == self.date
                     ]
         return [{'checkin': y.checkin,
                  'date_time': y.date_time.astimezone(current_tz)}

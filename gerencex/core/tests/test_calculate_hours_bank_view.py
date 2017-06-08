@@ -42,7 +42,7 @@ class CalculateHoursBankViewTest(TestCase):
         self.assertTemplateUsed(self.resp, 'calculate_bank.html')
 
     def test_post(self):
-        # activate_timezone()
+        utc = pytz.timezone('UTC')
         tickets = []
 
         # Let's create the list of check-ins and checkouts
@@ -70,8 +70,7 @@ class CalculateHoursBankViewTest(TestCase):
             work_hours=datetime.timedelta(hours=4)
         )
         tickets[5]['date'] = timezone.make_aware(datetime.datetime(
-            d3.year, d3.month, d3.day, hour=16, minute=0, second=0),
-            timezone=current_tz
+            d3.year, d3.month, d3.day, hour=16, minute=0, second=0)
         )
 
         # Let's register an absence in the 4th day. The user has checked out earlier,
@@ -92,7 +91,7 @@ class CalculateHoursBankViewTest(TestCase):
         for ticket in tickets:
             Timing.objects.create(
                 user=self.user,
-                date_time=ticket['date'],
+                date_time=ticket['date'].astimezone(utc),
                 checkin=ticket['checkin']
             )
 
@@ -124,10 +123,6 @@ class CalculateHoursBankViewTest(TestCase):
         for expected in contents:
             with self.subTest():
                 self.assertContains(self.resp3, expected)
-
-
-def activate_timezone():
-    return timezone.activate(pytz.timezone('America/Sao_Paulo'))
 
 
 def generate_days_list(n):

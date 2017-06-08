@@ -1,14 +1,9 @@
 import calendar
 from datetime import timedelta, date
 
-import pytz
 from django.utils import timezone
 from gerencex.core.models import Restday, Absences, HoursBalance
 from gerencex.core.time_calculations import DateData
-
-
-def activate_timezone():
-    timezone.activate(pytz.timezone('America/Sao_Paulo'))
 
 
 def dates(date1, date2):
@@ -52,10 +47,11 @@ class UserBalance:
         self.office = user.userdetail.office
         self.year = int(kwargs['year'])
         self.month = int(kwargs['month'])
+        today = timezone.localtime(timezone.now()).date()
         days_in_month = calendar.monthrange(self.year, self.month)[1]
         first_month_day = date(self.year, self.month, 1)
         self.last_month_day = first_month_day + timedelta(days=days_in_month)
-        self.last_day = min(timezone.now().date(), self.last_month_day)
+        self.last_day = min(today, self.last_month_day)
         self.start_date = user.userdetail.office.hours_control_start_date
 
         self.first_day = max(first_month_day, self.start_date)
@@ -140,7 +136,7 @@ def updates_hours_balance(office, date_):
     :return: Nothing. It just updates the database
     """
     users = [x.user for x in office.users.all()]
-    today = timezone.now().date()
+    today = timezone.localtime(timezone.now()).date()
 
     # date_ is present if calculate_hours_bank view was triggered. In this case, we must update
     # or create the balances for all office workers, and for all dates between date_ and today

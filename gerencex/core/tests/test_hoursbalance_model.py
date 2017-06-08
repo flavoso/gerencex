@@ -58,7 +58,7 @@ class CreditTriggerTest(TestCase):
         cls.user = User.objects.get(username='testuser')
 
     def test_credit_triggers(self):
-        activate_timezone()
+        # activate_timezone()
         t1 = Timing.objects.create(
              user=self.user,
              date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 12, 0, 0, 0)),
