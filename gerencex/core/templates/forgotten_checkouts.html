@@ -26,8 +26,8 @@
                         <tr>
                             <td>{{ reg.pk }}</td>
                             <td>{{ reg.name }}</td>
-                            <td>{{ reg.date|timezone:"America/Sao_Paulo"|date:"SHORT_DATE_FORMAT" }}</td>
-                            <td>{{ reg.date|timezone:"America/Sao_Paulo"|date:"H:i:s" }}</td>
+                            <td>{{ reg.date|localtime|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ reg.date|localtime|date:"H:i:s" }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

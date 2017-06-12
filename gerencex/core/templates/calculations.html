@@ -33,7 +33,7 @@
                             {% else %}
                                 <td class="text-center">Saída</td>
                             {% endif %}
-                            <td class="text-center">{{ d.date_time|timezone:"America/Sao_Paulo"|time:"H:i:s" }}</td>
+                            <td class="text-center">{{ d.date_time|localtime|time:"H:i:s" }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>

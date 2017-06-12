@@ -10,7 +10,7 @@
         <div class="alert alert-success" role="alert">
             <h4>{{ user.first_name }} {{ user.last_name }}</h4>
             <ul>
-                <li>Último registro: {{ status|upper }} em {{ date_time|timezone:"America/Sao_Paulo" }}</li>
+                <li>Último registro: {{ status|upper }} em {{ date_time|localtime }}</li>
                 <li>Saldo de horas (posição de ontem): {{ balance }}</li>
             </ul>
         </div>
@@ -22,7 +22,7 @@
             <h4>Registros de hoje</h4>
                 <ul>
                 {% for ticket in tickets %}
-                <li>{{ ticket.status|upper }} às {{ ticket.date_time|timezone:"America/Sao_Paulo"|date:"H:i:s" }}</li>
+                <li>{{ ticket.status|upper }} às {{ ticket.date_time|localtime|date:"H:i:s" }}</li>
                 {% endfor %}
                 </ul>
 

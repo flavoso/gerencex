@@ -35,8 +35,8 @@
                     {% for l in lines %}
                         <tr class="text-center">
                             <td>{{ l.date|date:"SHORT_DATE_FORMAT" }}</td>
-                            <td>{{ l.check_in|timezone:"America/Sao_Paulo"|date:"H:i:s" }}</td>
-                            <td>{{ l.checkout|timezone:"America/Sao_Paulo"|date:"H:i:s" }}</td>
+                            <td>{{ l.check_in|localtime|date:"H:i:s" }}</td>
+                            <td>{{ l.checkout|localtime|date:"H:i:s" }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
