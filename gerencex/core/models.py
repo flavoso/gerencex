@@ -163,6 +163,15 @@ class Absences(models.Model):
         index_together = ['date', 'user']
         get_latest_by = 'date'
 
+    def time_credit(self):
+        return str(timedelta(seconds=self.credit))
+
+    def time_debit(self):
+        return str(timedelta(seconds=self.debit))
+
+    time_credit.short_description = 'crédito'
+    time_debit.short_description = 'redução de débito'
+
     def __str__(self):
         return '{} -- {} : {}'.format(self.date, self.user, self.cause)
 

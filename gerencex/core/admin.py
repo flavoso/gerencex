@@ -38,7 +38,7 @@ class HoursBalanceAdmin(admin.ModelAdmin):
 
 
 class AbsencesAdmin(admin.ModelAdmin):
-    list_display = ('user', 'date', 'cause', 'credit', 'debit')
+    list_display = ('user', 'date', 'cause', 'time_credit', 'time_debit')
     list_filter = ('user',)
     date_hierarchy = 'date'
 
