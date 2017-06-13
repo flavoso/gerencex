@@ -470,7 +470,8 @@ def my_tickets(request, username, year, month):
         for tkt in tkts:
             if tkt.checkin:
                 line.append(date_)
-                line.append(tkt.date_time)
+                # line.append(tkt.date_time)
+                line.append(tkt)
                 if tkt == tkts[-1]:
                     line.append(None)
                     lines.append(line)
@@ -479,9 +480,11 @@ def my_tickets(request, username, year, month):
                 if len(line) == 0:
                     line.append(date_)
                     line.append(None)
-                    line.append(tkt.date_time)
+                    # line.append(tkt.date_time)
+                    line.append(tkt)
                 else:
-                    line.append(tkt.date_time)
+                    # line.append(tkt.date_time)
+                    line.append(tkt)
                 lines.append(line)
                 line = []
 

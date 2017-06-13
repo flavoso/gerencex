@@ -1,10 +1,10 @@
 import datetime
 
 import pytz
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
-from django.shortcuts import resolve_url as r
 from gerencex.core.models import Office, Timing
 
 
@@ -64,9 +64,21 @@ class MyTicketsViewTest(TestCase):
         chk_in = '12:00:00'
         chk_out = '19:00:00'
 
+        # Links for changing the tickets in the admin interface
+        link = '/admin/core/timing/{}/change'.format(str(1))
+
         self.assertContains(resp2, date, count=1)
         self.assertContains(resp2, chk_in, count=len(self.days))
         self.assertContains(resp2, chk_out, count=len(self.days))
+
+        # Only managers should view the links for changing tickets
+        self.assertNotContains(resp2, link)
+
+        # Managers view the links for changing tickets
+        self.group = Group.objects.create(name='managers')
+        self.user.groups.set([self.group])
+        resp3 = self.client.get(r('my_tickets', self.user.username, self.year, self.month))
+        self.assertContains(resp3, link, count=1)
 
 
 def activate_timezone():

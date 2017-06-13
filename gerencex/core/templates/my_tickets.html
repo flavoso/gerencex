@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load user_tags %}
 
 {% load tz %}
 
@@ -35,8 +36,19 @@
                     {% for l in lines %}
                         <tr class="text-center">
                             <td>{{ l.date|date:"SHORT_DATE_FORMAT" }}</td>
-                            <td>{{ l.check_in|localtime|date:"H:i:s" }}</td>
-                            <td>{{ l.checkout|localtime|date:"H:i:s" }}</td>
+                            {% if user|has_group:"managers" %}
+                                <td>
+                                    <a href="/admin/core/timing/{{ l.check_in.id }}/change/"
+                                       target="_blank">{{ l.check_in.date_time|localtime|date:"H:i:s" }}</a>
+                                </td>
+                                <td>
+                                    <a href="/admin/core/timing/{{ l.checkout.id }}/change/"
+                                       target="_blank">{{ l.checkout.date_time|localtime|date:"H:i:s" }}</a>
+                                </td>
+                            {% else %}
+                                <td>{{ l.check_in.date_time|localtime|date:"H:i:s" }}</td>
+                                <td>{{ l.checkout.date_time|localtime|date:"H:i:s" }}</td>
+                            {% endif %}
                         </tr>
                     {% endfor %}
                 </tbody>
