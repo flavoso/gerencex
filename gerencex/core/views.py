@@ -1,6 +1,6 @@
 import calendar
 import socket
-from datetime import timedelta, datetime, date
+from datetime import timedelta, datetime, date, time
 
 import pytz
 from decouple import config
@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, resolve_url as r
 from django.utils import timezone
-from gerencex.core.forms import AbsencesForm, GenerateBalanceForm
+from gerencex.core.forms import AbsencesForm, GenerateBalanceForm, CheckForm
 from gerencex.core.functions import get_client_ip, previous_next, \
     UserBalance, updates_hours_balance
 from gerencex.core.models import Timing, Absences, Restday, HoursBalance, Office
@@ -540,3 +540,45 @@ def calculations(request, username, year, month, day):
     date_ = date(int(year), int(month), int(day))
     datedata = DateData(user, date_)
     return render(request, 'calculations.html', {'date': datedata})
+
+
+@login_required
+@permission_required(['core.add_timing', 'core.change_timing', 'core.delete_timing'])
+def manual_check(request):
+    office = request.user.userdetail.office
+    users = User.objects.filter(userdetail__office=office)
+    if request.method == 'POST':
+        form = CheckForm(request.POST, users=users)
+        if form.is_valid():
+            date_ = form.cleaned_data['date']
+            user = form.cleaned_data['user']
+            time_ = form.cleaned_data['time']
+            check_in = form.cleaned_data['check_in']
+            datetime_ = timezone.make_aware(
+                datetime(date_.year,
+                         date_.month,
+                         date_.day,
+                         time_.hour,
+                         time_.minute,
+                         time_.second)
+            )
+            status = True if (check_in == '1') else False
+
+            Timing.objects.create(
+                user=user,
+                date_time=datetime_,
+                checkin=status,
+                created_by=request.user
+            )
+
+            return HttpResponseRedirect(r('my_tickets',
+                                          username=user.username,
+                                          year=str(date_.year),
+                                          month=str(date_.month)
+                                          )
+                                        )
+        else:
+            return render(request, 'manual_check.html', {'form': form})
+
+    form = CheckForm(users=users)
+    return render(request, 'manual_check.html', {'form': form})

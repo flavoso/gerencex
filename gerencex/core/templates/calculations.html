@@ -73,17 +73,17 @@
                             <td class="text-center">{{ date.absence_credit_delta|timedelta }}</td>
                         </tr>
                         {% endif %}
-                        {% if date.param.min_work_hours_for_credit.used %}
+                        {% if date.min_work_hours_for_credit.used %}
                         <tr>
                             <td>Dedução devida ao critério de <br>
-                                número mínimo de horas para crédito ({{ date.param.min_work_hours_for_credit.value|timedelta }})</td>
+                                número mínimo de horas para crédito ({{ date.min_work_hours_for_credit.value|timedelta }})</td>
                             <td class="text-center">{{ date.min_work_hours_for_credit_delta|timedelta }}</td>
                         </tr>
                         {% endif %}
-                        {% if date.param.max_daily_credit.used %}
+                        {% if date.max_daily_credit.used %}
                         <tr>
                             <td>Dedução devida ao critério de <br>
-                                crédito diário máximo ({{ date.param.max_daily_credit.value|timedelta }})</td>
+                                crédito diário máximo ({{ date.max_daily_credit.value|timedelta }})</td>
                             <td class="text-center">{{ date.max_daily_credit_delta|timedelta }}</td>
                         </tr>
                         {% endif %}

@@ -4,6 +4,11 @@ from django.utils import timezone
 from gerencex.core.models import Restday, Absences
 
 
+class MyModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return "{}".format(obj.get_full_name())
+
+
 class RestdayForm(forms.ModelForm):
     class Meta:
         model = Restday
@@ -11,7 +16,7 @@ class RestdayForm(forms.ModelForm):
 
 
 class AbsencesForm(forms.Form):
-    user = forms.ModelChoiceField(label='Colaborador',
+    user = MyModelChoiceField(label='Colaborador',
                                   queryset=None,
                                   empty_label=None)
     begin = forms.DateField(label='Início',
@@ -57,3 +62,31 @@ class GenerateBalanceForm(forms.Form):
 
         if begin and begin > timezone.now().date():
             self.add_error('end', forms.ValidationError('Data inválida', code='inicio'))
+
+
+class CheckForm(forms.Form):
+    CHOICES = (('1', 'Entrada',), ('2', 'Saída',))
+    user = MyModelChoiceField(label='Colaborador',
+                              queryset=None,
+                              empty_label=None)
+    date = forms.DateField(label='Data',
+                           widget=forms.TextInput(attrs={'class': 'datepicker'}))
+    time = forms.TimeField(label='Horário')
+    check_in = forms.ChoiceField(label='Entrada ou saída?',
+                                 widget=forms.RadioSelect,
+                                 choices=CHOICES)
+
+    def __init__(self, *args, **kwargs):
+        self.users = kwargs.pop("users")
+        super(CheckForm, self).__init__(*args, **kwargs)
+        self.fields["user"].queryset = self.users.order_by('first_name')
+
+    def clean(self):
+        super(CheckForm, self).clean()
+        date = self.cleaned_data.get("date")
+        today = timezone.localtime(timezone.now()).date()
+
+        if date > today:
+            self.add_error('date', forms.ValidationError(
+                'Impossível registrar em data futura', code='data')
+                )

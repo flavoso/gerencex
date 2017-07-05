@@ -1,7 +1,7 @@
 import datetime
 
 import pytz
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
@@ -14,6 +14,8 @@ class ForgottenCheckoutsViewTest(TestCase):
         Office.objects.create(name='Nenhuma lotação', initials='NL')
         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user.first_name = 'ze mane'
+        group = Group.objects.create(name='managers')
+        self.user.groups.set([group])
         self.user.save()
         self.client.login(username='testuser', password='senha123')
 

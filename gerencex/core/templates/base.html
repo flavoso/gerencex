@@ -51,6 +51,7 @@
                             <li><a href="{% url 'office_tickets' %}">Registros de ponto do setor</a></li>
                             {% if user|has_group:"managers" %}
                                 <li role="separator" class="divider"></li>
+                                <li><a href="{% url 'manual_check' %}">Registrar entrada ou saída manualmente</a></li>
                                 <li><a href="{% url 'absence_new' %}">Cadastrar afastamento</a></li>
                                 <li><a href="{% url 'calculate_hours_bank' %}">(Re)Calcular banco de horas</a></li>
                                 <li><a href="{% url 'forgotten_checkouts' %}">Saídas não registradas</a></li>

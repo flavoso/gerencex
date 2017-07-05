@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load tz %}
+{% load user_tags %}
 
 
 {% block content %}
@@ -34,11 +35,13 @@
             </table>
         </div>
     </div>
-    <div class="row">
-        <div class="col-sm-12">
-            <a href="/admin/core/timing/add/" target="_blank">Adicionar registro manualmente</a>
+    {% if user|has_group:"managers" %}
+        <div class="row">
+            <div class="col-sm-12">
+                <a href="/admin/core/timing/add/" target="_blank">Adicionar registro manualmente</a>
+            </div>
         </div>
-    </div>
+    {% endif %}
 </section>
 
 {% endblock %}
