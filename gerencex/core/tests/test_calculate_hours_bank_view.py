@@ -1,7 +1,7 @@
 import datetime
 
 import pytz
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
@@ -25,6 +25,16 @@ class CalculateHoursBankViewTest(TestCase):
             checkout_tolerance=datetime.timedelta(minutes=0),
             hours_control_start_date=self.days[0]
         )
+
+        # Creating 'managers' group. Only members of this group can calculate the Hours Bank
+        Group.objects.create(name='managers')
+        self.group = Group.objects.get(name='managers')
+        self.perm1 = Permission.objects.get(codename='add_hoursbalance')
+        self.perm2 = Permission.objects.get(codename='change_hoursbalance')
+        self.perm3 = Permission.objects.get(codename='delete_hoursbalance')
+        self.group.permissions.add(self.perm1, self.perm2, self.perm3)
+
+        # Creating user belonging to managers group
         self.user = User.objects.create_user('testuser', 'test@user.com', 'senha123')
         self.user.first_name = 'ze'
         self.user.last_name = 'mane'
@@ -32,6 +42,7 @@ class CalculateHoursBankViewTest(TestCase):
         self.user.userdetail.opening_hours_balance = 0
         self.user.userdetail.office = self.office
         self.user.save()
+        self.user.groups.add(self.group)
         self.client.login(username='testuser', password='senha123')
         self.resp = self.client.get(r('calculate_hours_bank'), follow=True)
 

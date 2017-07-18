@@ -1,8 +1,7 @@
 import calendar
 import socket
-from datetime import timedelta, datetime, date, time
+from datetime import timedelta, datetime, date
 
-import pytz
 from decouple import config
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
@@ -292,6 +291,7 @@ def hours_bank(request):
 
 
 @login_required
+@permission_required(['core.change_hoursbalance'])
 def calculate_hours_bank(request):
     """
     (Re)Generates the hours balance for all users in the office

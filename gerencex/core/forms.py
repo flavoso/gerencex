@@ -36,7 +36,7 @@ class AbsencesForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.users = kwargs.pop("users")
         super(AbsencesForm, self).__init__(*args, **kwargs)
-        self.fields["user"].queryset = self.users
+        self.fields["user"].queryset = self.users.order_by('first_name')
 
     def clean(self):
         super(AbsencesForm, self).clean()
