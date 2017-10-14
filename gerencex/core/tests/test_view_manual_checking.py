@@ -37,7 +37,7 @@ class ManualCheckView(TestCase):
     def test_get_not_manager(self):
         self.client.login(username='testuser2', password='senha123')
         self.resp2 = self.client.get(r('manual_check'))
-        self.assertEquals(302, self.resp2.status_code)
+        self.assertEqual(302, self.resp2.status_code)
 
 
 def add_user_to_managers_group(user):
