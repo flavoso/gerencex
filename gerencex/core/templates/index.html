@@ -6,7 +6,7 @@
 {% block content %}
 <section class="container-fluid">
 <div class="row">
-    <div class="col-sm-6">
+    <div class="col-sm-4">
         <div class="alert alert-success" role="alert">
             <h4>{{ user.first_name }} {{ user.last_name }}</h4>
             <ul>
@@ -15,20 +15,37 @@
             </ul>
         </div>
     </div>
-    {% if tickets %}
-    <div class="col-sm-6">
-        <div class="alert alert-success" role="alert">
 
-            <h4>Registros de hoje</h4>
+    {% if tickets %}
+    <div class="col-sm-4">
+        <div class="alert alert-success" role="alert">
+            <h4>Meus registros de hoje</h4>
                 <ul>
                 {% for ticket in tickets %}
                 <li>{{ ticket.status|upper }} às {{ ticket.date_time|localtime|date:"H:i:s" }}</li>
                 {% endfor %}
                 </ul>
-
         </div>
     </div>
     {% endif %}
+
+    {% if users %}
+        {% if tickets %}
+        <div class="col-sm-4">
+        {% else %}
+        <div class="col-sm-4 col-sm-offset-4">
+        {% endif %}
+        <div class="alert alert-success" role="alert">
+            <h4>Colaboradores no local de trabalho</h4>
+                <ul>
+                {% for u in users %}
+                <li>{{ u.first_name }} {{ u.last_name }}</li>
+                {% endfor %}
+                </ul>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 <div class="row">
     <div class="col-sm-4">

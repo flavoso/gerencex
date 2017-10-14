@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.test import TestCase
 from gerencex.core.models import HoursBalance, Timing, Office
+from gerencex.core.time_calculations import DateData
 
 
 class HoursBalanceModelTest(TestCase):
@@ -24,10 +25,12 @@ class HoursBalanceModelTest(TestCase):
         # Test creation
         self.assertTrue(HoursBalance.objects.exists())
 
-        # First balance is calculated without a previous balance
+        # First balance is calculated without a previous balance (see the
+        # total_balance_handler function at signals.py)
         self.assertEqual(r1.balance, int(datetime.timedelta(hours=-1).total_seconds()))
 
-        # Second balance takes the first balance into account
+        # Second balance takes the first balance into account (see the
+        # total_balance_handler function at signals.py)
         r2 = HoursBalance.objects.create(
             date=datetime.date(2016, 8, 19),
             user=self.user,
@@ -36,7 +39,8 @@ class HoursBalanceModelTest(TestCase):
         )
         self.assertEqual(r2.balance, int(datetime.timedelta(hours=-2).total_seconds()))
 
-        # Change in first credit or debit must change the second balance
+        # Change in first credit or debit must change the second balance (see the
+        # next_balance_handler function at signals.py)
 
         r1.credit = datetime.timedelta(hours=7).seconds
         r1.save()
@@ -58,62 +62,59 @@ class CreditTriggerTest(TestCase):
         cls.user = User.objects.get(username='testuser')
 
     def test_credit_triggers(self):
-        # activate_timezone()
+
+        # Let's record a check in...
         t1 = Timing.objects.create(
              user=self.user,
              date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 12, 0, 0, 0)),
              checkin=True
         )
 
-        # Test checkout creation
+        # ...and a checkout
         t2 = Timing.objects.create(
              user=self.user,
              date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 13, 0, 0, 0)),
              checkin=False
         )
+
+        # Let's record a balance line at HoursBalance
         date = datetime.date(2016, 10, 3)
-        balance_line = HoursBalance.objects.filter(date=date, user=self.user)[0]
+        new_credit = DateData(self.user, date).credit().seconds
+        new_debit = DateData(self.user, date).debit().seconds
+        HoursBalance.objects.create(
+            date=date,
+            user=self.user,
+            credit=new_credit,
+            debit=new_debit
+        )
+
+        # Let's change t2 (checkout record)
+        t2.date_time += datetime.timedelta(hours=1)
+        t2.save()
+
+        # The balance must have been recalculated via django signal (signals.py)
         checkout_tolerance = self.user.userdetail.office.checkout_tolerance
         checkin_tolerance = self.user.userdetail.office.checkin_tolerance
         tolerance = checkout_tolerance + checkin_tolerance
-        reference = datetime.timedelta(hours=1).seconds + tolerance.seconds
-        credit = balance_line.credit
+        reference = datetime.timedelta(hours=2).seconds + tolerance.seconds
+        line = HoursBalance.objects.first()
+        credit = line.credit
 
         self.assertEqual(reference, credit)
 
-        # Test checkout change
-        t2.date_time += datetime.timedelta(hours=1)
-        t2.save()
-        modified_reference1 = datetime.timedelta(hours=2).seconds + tolerance.seconds
-        modified_balance_line1 = HoursBalance.objects.filter(date=date, user=self.user)[0]
-        modified_credit1 = modified_balance_line1.credit
-
-        self.assertEqual(modified_reference1, modified_credit1)
-
-        # Test checkin change
+        # Let's change t1 (checkin record)
         t1.date_time += datetime.timedelta(hours=1)
         t1.save()
-        modified_reference2 = datetime.timedelta(hours=1).seconds + tolerance.seconds
-        modified_balance_line2 = HoursBalance.objects.filter(date=date, user=self.user)[0]
-        modified_credit2 = modified_balance_line2.credit
 
-        self.assertEqual(modified_reference2, modified_credit2)
+        # The balance must have been recalculated via signal
+        modified_reference = datetime.timedelta(hours=1).seconds + tolerance.seconds
+        modified_balance_line = HoursBalance.objects.first()
+        modified_credit = modified_balance_line.credit
 
-        # Test new checkin (in this case, we must not have a corresponding line at HoursBalance)
-        t3 = Timing.objects.create(
-             user=self.user,
-             date_time=timezone.make_aware(datetime.datetime(2016, 10, 3, 14, 0, 0, 0)),
-             checkin=True
-        )
-        modified_reference3 = datetime.timedelta(hours=1).seconds + tolerance.seconds
-        modified_balance_line3 = HoursBalance.objects.filter(date=date, user=self.user)[0]
-        modified_credit3 = modified_balance_line3.credit
-
-        self.assertEqual(modified_reference3, modified_credit3)
+        self.assertEqual(modified_reference, modified_credit)
 
 
 # TODO: Escrever o teste depois que já houver view para produzir o balanço da divisão e do usuário
-
 
 class RestdayDebitTriggerTest(TestCase):
     """
@@ -136,7 +137,6 @@ class RestdayDebitTriggerTest(TestCase):
         cls.user2 = User.objects.get(username='testuser')
 
     # def test_debit_trigger(self):
-
 
 
 def activate_timezone():

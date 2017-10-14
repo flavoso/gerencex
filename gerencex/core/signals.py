@@ -62,27 +62,36 @@ def save_user_userdetail(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Timing)
 def credit_calculation(sender, instance, created, **kwargs):
+    """
+    Changes in check ins and checkouts registries must trigger an HoursBalance
+    recalculation, if there is an existent balance for the same date and user.
+    """
     date = instance.date_time.date()
+    balance_line = HoursBalance.objects.filter(date=date, user=instance.user)
 
-    if instance.checkin:
-        next_ticket_is_checkout = sender.objects.filter(user=instance.user,
-                                                        date_time__date=date,
-                                                        date_time__gt=instance.date_time,
-                                                        checkin=False).first()
-        if next_ticket_is_checkout:
-            credit = DateData(instance.user, date).credit().seconds
-            debit = DateData(instance.user, date).debit().seconds
-            change_balance(date, instance.user, credit, debit)
-    else:
+    if balance_line:
+        # if instance.checkin:
+        #     next_ticket_is_checkout = sender.objects.filter(user=instance.user,
+        #                                                     date_time__date=date,
+        #                                                     date_time__gt=instance.date_time,
+        #                                                     checkin=False).first()
+        #     if next_ticket_is_checkout:
+        #         credit = DateData(instance.user, date).credit().seconds
+        #         debit = DateData(instance.user, date).debit().seconds
+        #         change_balance(date, instance.user, credit, debit)
+        # else:
         credit = DateData(instance.user, date).credit().seconds
         debit = DateData(instance.user, date).debit().seconds
-        change_balance(date, instance.user, credit, debit)
+        # change_balance(date, instance.user, credit, debit)
+        balance_line[0].credit = credit
+        balance_line[0].debit = debit
+        balance_line[0].save()
 
 
 @receiver(post_save, sender=Restday)
 def debit_calculation_restday(sender, instance, created, **kwargs):
     """
-    When a we record a Restday whose date is already in lines at HoursBalance, we must
+    When we record a Restday whose date is already in lines at HoursBalance, we must
     recalculate the balance at these lines.
     """
     balance_lines = [x for x in HoursBalance.objects.filter(date=instance.date,
@@ -96,13 +105,14 @@ def debit_calculation_restday(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Absences)
 def debit_calculation_absence(sender, instance, created, **kwargs):
     """
-    When an Absence debit registry is changed, it must be recalculated the daily balance for the
-    date of that registry, if it exists.
+    When an Absence debit registry is changed, the daily balance for the
+    date of that registry must be recalculated, if it exists.
     """
 
     if instance.debit != 0:
         balance_line = HoursBalance.objects.filter(date=instance.date,
                                                    user=instance.user)
+
         if balance_line:
             balance_line.first().debit = DateData(instance.user, instance.date).debit().seconds
             balance_line.first().save()

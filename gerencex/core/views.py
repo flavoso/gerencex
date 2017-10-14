@@ -42,11 +42,16 @@ def home(request):
             for x in today_tickets
         ]
 
+    office = request.user.userdetail.office
+    users = User.objects.filter(userdetail__office=office,
+                                userdetail__atwork=True).order_by('first_name')
+
     context = {
         'status': status,
         'date_time': date_time,
         'balance': balance,
-        'tickets': tickets
+        'tickets': tickets,
+        'users': users
     }
     return render(request, 'index.html', context)
 
@@ -255,7 +260,8 @@ def hours_bank(request):
     Shows the balance of hours of office workers. It must show the balances for yesterday.
     """
     office = request.user.userdetail.office
-    users = [u.user for u in office.users.all()]
+    # users = [u.user for u in office.users.all()]
+    users = User.objects.filter(userdetail__office=office)
     today = timezone.localtime(timezone.now()).date()
     yesterday = today - timedelta(days=1)
     date_ = None

@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import resolve_url as r
 from django.test import TestCase
 from django.utils import timezone
-from gerencex.core.models import Timing, HoursBalance, Office
+from gerencex.core.models import Timing, Office, Restday, Absences
 
 
 class MyHoursBankViewTest(TestCase):
@@ -45,7 +45,7 @@ class MyHoursBankViewTest(TestCase):
         self.assertTemplateUsed(self.resp, 'my_hours_bank.html')
 
     def test_html(self):
-        activate_timezone()
+        # activate_timezone()
         tickets = []
 
         # Let's create the list of check-ins and checkouts
@@ -60,33 +60,33 @@ class MyHoursBankViewTest(TestCase):
             )
 
         # Today, the user has not checked out yet
-        # del(tickets[-1])
-        #
-        # # Let's add a restday on the 3rd day:
-        # d3 = self.days[2]
-        #
-        # Restday.objects.create(
-        #     date=d3,
-        #     note='Feriado de teste',
-        #     work_hours=datetime.timedelta(hours=4)
-        # )
-        # tickets[5]['date'] = datetime.datetime(
-        #     d3.year, d3.month, d3.day, hour=15, minute=0, second=0
-        # )
-        #
-        # # Let's register an absence in the 4th day. The user has checked out earlier,
-        # # due to medical reasons: Debit = 3 hours
-        # d4 = self.days[3]
-        # Absences.objects.create(
-        #     date=d4,
-        #     user=self.user,
-        #     cause='LM',
-        #     credit=0,
-        #     debit=datetime.timedelta(hours=4).seconds
-        # )
-        # tickets[7]['date'] = datetime.datetime(
-        #     d4.year, d4.month, d4.day, hour=16, minute=0, second=0
-        # )
+        del(tickets[-1])
+
+        # Let's add a restday on the 3rd day:
+        d3 = self.days[2]
+
+        Restday.objects.create(
+            date=d3,
+            note='Feriado de teste',
+            work_hours=datetime.timedelta(hours=4)
+        )
+        tickets[5]['date'] = datetime.datetime(
+            d3.year, d3.month, d3.day, hour=15, minute=0, second=0
+        )
+
+        # Let's register an absence in the 4th day. The user has checked out earlier,
+        # due to medical reasons: Debit = 3 hours
+        d4 = self.days[3]
+        Absences.objects.create(
+            date=d4,
+            user=self.user,
+            cause='LM',
+            credit=0,
+            debit=datetime.timedelta(hours=4).seconds
+        )
+        tickets[7]['date'] = datetime.datetime(
+            d4.year, d4.month, d4.day, hour=16, minute=0, second=0
+        )
 
         # Let's register the user's check ins and checkouts
         for ticket in tickets:
@@ -98,55 +98,16 @@ class MyHoursBankViewTest(TestCase):
 
         # Now, let's call the my_hours_bank view for the current month
         self.resp2 = self.client.get(r('my_hours_bank', 'testuser', self.year, self.month))
-        line = HoursBalance.objects.filter(user=self.user).last()
         line_date = '{:%d/%m/%Y}'.format(self.days[-2])
         line_credit = '7:00:00'
         line_debit = '7:00:00'
         line_balance = '0:00:00'
-        # contents = [line_date, line_credit, line_debit, line_balance]
-        # line = "\n".join([x for x in contents])
-        # print(self.resp2.content)
-        # self.assertContains(self.resp2, line)
-        contents = [''] if timezone.now().date().day == 1 else \
+
+        contents = [''] if timezone.localtime(timezone.now()).date().day == 1 else \
             [line_date, line_credit, line_debit, line_balance]
         for expected in contents:
             with self.subTest():
                 self.assertContains(self.resp2, expected)
-
-        # line = HoursBalance.objects.filter(date=self.first_date, user=self.user).last()
-        #
-        # print('Data: {}'.format(line.date))
-        # print('Crédito: ' + str(line.credit))
-        # print('Débito: ' + str(line.debit))
-        # print('Saldo: ' + str(line.balance))
-
-        # from gerencex.core.views import comments
-        # print('Observação: {}'.format(comments(self.user, self.first_date)))
-
-        # Now, let's call the my_hours_bank view for the initial month
-        # self.resp3 = self.client.get(r('my_hours_bank',
-        #                                'testuser',
-        #                                self.days[0].year,
-        #                                self.days[0].month))
-        #
-        # line = HoursBalance.objects.filter(date=self.days[0], user=self.user).last()
-
-        # print('Data: {}'.format(line.date))
-        # print('Crédito: {}'.format(line.credit))
-        # print('Débito: {}'.format(line.debit))
-        # print('Saldo: {}'.format(line.balance))
-        # print('Crédito: {}'.format(line.time_credit()))
-        # print('Débito: {}'.format(line.time_debit()))
-        # print('Saldo: {}'.format(line.time_balance()))
-
-        # from gerencex.core.views import comments
-        # print('Observação: {}'.format(comments(self.user, self.days[0])))
-
-        # print('Resultado do calculate_debit: {}'.format(calculate_debit(self.user, self.days[0])))
-
-        # print('Carga horária: {}'.format(office.regular_work_hours))
-        # print('Last Balance Date: {}'.format(office.last_balance_date))
-        # print(self.resp2.content)
 
 
 def activate_timezone():
@@ -160,7 +121,7 @@ def generate_days_list(n):
     :return: A list of datetime.date elements, beginning at the first monday prior to 'n' days
     before today.
     """
-    today = timezone.now().date()
+    today = timezone.localtime(timezone.now()).date()
     aux = today - datetime.timedelta(days=n)
     first_monday = aux - datetime.timedelta(days=aux.weekday())
     days = []

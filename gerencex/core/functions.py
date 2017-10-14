@@ -157,7 +157,11 @@ def updates_hours_balance(office, date_):
     # all office users have balances for yesterday, filling the blanks.
     else:
         for user in users:
-            last_user_balance_date = HoursBalance.objects.filter(user=user).last().date
+            existent_balance = bool(HoursBalance.objects.filter(user=user))
+            if not existent_balance:
+                last_user_balance_date = office.hours_control_start_date - timedelta(days=1)
+            else:
+                last_user_balance_date = HoursBalance.objects.filter(user=user).last().date
             next_user_balance_date = last_user_balance_date + timedelta(days=1)
             if next_user_balance_date < today:
                 for d in dates(next_user_balance_date, today):
