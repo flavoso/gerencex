@@ -25,11 +25,11 @@ class AbsencesForm(forms.Form):
                           widget=forms.TextInput(attrs={'class': 'datepicker'}))
     cause = forms.ChoiceField(label='Motivo', choices=Absences.ABSENCES_CHOICES)
     credit = forms.DurationField(label='Crédito',
-                                 widget=forms.TextInput(attrs={'type': 'time'}),
+                                 # widget=forms.TextInput(attrs={'type': 'time'}),
                                  required=False,
                                  initial='0:00:00')
     debit = forms.DurationField(label='Redução de débito',
-                                widget=forms.TextInput(attrs={'type': 'time'}),
+                                # widget=forms.TextInput(attrs={'type': 'time'}),
                                 required=False,
                                 initial='0:00:00')
 
