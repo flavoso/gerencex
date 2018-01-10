@@ -15,13 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.contrib.auth.views import logout
+from django.contrib.auth.views import LogoutView
 from gerencex.core.views import home, my_hours_bank, hours_bank, timing, timing_new, \
     timing_fail, forgotten_checkouts, absences, absence_new, rules, calculate_hours_bank, my_tickets, \
     restdays, calculations, absences_office, office_tickets, manual_check
 
 urlpatterns = [
-    url('^logout/$', logout, {'next_page': 'home'}, name='logout'),
+    url('^logout/$', LogoutView.as_view(next_page='home'), name='logout'),
     url('^', include('django.contrib.auth.urls')),
     url(r'^$', home, name='home'),
     url(r'^banco_de_horas/$', hours_bank, name='hours_bank'),

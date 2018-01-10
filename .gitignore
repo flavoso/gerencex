@@ -1,4 +1,5 @@
 .venv
+.venv2
 .env
 .idea
 Desenvolvimento.mm
@@ -15,3 +16,4 @@ staticfiles/
 changelog.txt
 bkp.sql
 scripts/
+requirements.*

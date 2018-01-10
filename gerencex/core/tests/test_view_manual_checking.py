@@ -32,7 +32,7 @@ class ManualCheckView(TestCase):
     def test_get_manager(self):
         self.client.login(username='testuser', password='senha123')
         self.resp = self.client.get(r('manual_check'))
-        self.assertEquals(200, self.resp.status_code)
+        self.assertEqual(200, self.resp.status_code)
 
     def test_get_not_manager(self):
         self.client.login(username='testuser2', password='senha123')
